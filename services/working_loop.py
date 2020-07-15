@@ -36,9 +36,8 @@ class WorkingLoop:
                 with self._lock:
                     update = self._updates_queue.get()
             else:
+                time.sleep(3)
                 continue
-
-            time.sleep(1)
 
             self._update_handler.handle_command(update)
 
@@ -49,5 +48,4 @@ class WorkingLoop:
         handling_thread.start()
         balances_check_thread.start()
 
-        while True:
-            self._listen_for_updates()
+        self._listen_for_updates()

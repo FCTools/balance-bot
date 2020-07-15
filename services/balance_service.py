@@ -46,15 +46,19 @@ class BalanceService:
         }
 
     def session_is_active(self, network):
+        session_lifetime = 1  # hours
+
         return self._networks[network]["session"] and datetime.utcnow() - self._networks[network]["session"][
             "creation_time"
-        ] < timedelta(hours=1)
+        ] < timedelta(hours=session_lifetime)
 
     def check_balance(self, network, balance):
+        notifications_interval = 2  # hours
+
         notification_levels = self._database_cursor.get_notification_levels(network)
 
-        notification_level = notification_levels[0]["level"]
-        last_balance = notification_levels[0]["balance"]
+        notification_level = None
+        last_balance = 10 ** 9  # just very big number
 
         for level in notification_levels:
             if last_balance > level["balance"] > balance:
@@ -66,7 +70,8 @@ class BalanceService:
 
         if not self._networks[network]["last_notification_sending_time"] or (
             notification_level != self._networks[network]["last_notification"]
-            and datetime.utcnow() - self._networks[network]["last_notification_sending_time"] < timedelta(hours=2)
+            and datetime.utcnow() - self._networks[network]["last_notification_sending_time"]
+            < timedelta(hours=notifications_interval)
         ):
             self.send_status_message(network, balance, notification_level)
 
@@ -164,7 +169,7 @@ class BalanceService:
         return True
 
     def get_pushhouse_balance(self):
-        if not self.session_is_active("Push.house"):
+        if not self.session_is_active(network="Push.house"):
             if not self.pushhouse_authorize():
                 return
 
@@ -195,7 +200,7 @@ class BalanceService:
         return balance
 
     def send_status_message(self, network, balance, level):
-        message = f"{level}: {network} balance is {balance}"
+        message = f"<b>{level.upper()}</b>: {network} balance is {balance}$"
         users_list = self._database_cursor.get_users()
 
         for user in users_list:
