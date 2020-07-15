@@ -51,9 +51,7 @@ class UpdateHandler:
                 self._set_balance_value(chat_id, command_text[1:])
             elif command_text[0] == "get_balance":
                 if len(command_text) < 2:
-                    self._sender.send_message(
-                        chat_id, "Incorrect network. I support only propeller, pushhouse and evadav."
-                    )
+                    self._get_balance(chat_id, "")
                 else:
                     self._get_balance(chat_id, command_text[1])
 
@@ -72,12 +70,9 @@ class UpdateHandler:
         # set balance
 
     def _get_balance(self, chat_id, network_alias):
-        if network_alias not in self._available_networks:
+        if network_alias and network_alias not in self._available_networks:
             self._sender.send_message(chat_id, "Incorrect network. I support only prop, pushhouse and eva.")
             return
-
-        balance = None
-        network_name = None
 
         if network_alias == "prop":
             network_name = "PropellerAds"
@@ -88,6 +83,11 @@ class UpdateHandler:
         elif network_alias == "pushhouse":
             network_name = "Push.house"
             balance = self._balance_service.get_pushhouse_balance()
+        else:
+            self._get_balance(chat_id, "prop")
+            self._get_balance(chat_id, "eva")
+            self._get_balance(chat_id, "pushhouse")
+            return
 
         if balance:
             self._sender.send_message(chat_id, f"{network_name} balance is {balance}$")
@@ -106,8 +106,9 @@ class UpdateHandler:
             "1. /start - start message\n"
             "2. /help - this message\n\n"
             "3. /get_balance - returns current balance for selected network.\n\n"
-            "<b>Format</b>: /get_balance [<i>network_alias</i>]\n\n"
-            "   <i>network_alias</i> - prop, pushhouse or eva"
+            "<b>Format</b>: /get_balance <i>network_alias</i>\n\n"
+            "   <i>network_alias</i> - optional, can be: prop, pushhouse or eva. "
+            "If empty, returns balances for all networks."
         )
 
         self._sender.send_message(chat_id, help_message_template)

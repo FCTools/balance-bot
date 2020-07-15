@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import timedelta
 from urllib.parse import urlencode
@@ -11,9 +12,10 @@ import time
 
 from services.database_cursor import Database
 from services.sender import Sender
+from services.singleton import Singleton
 
 
-class BalanceService:
+class BalanceService(metaclass=Singleton):
     def __init__(self, telegram_access_token):
         self._sender = Sender(telegram_access_token)
         self._database_cursor = Database()
@@ -21,6 +23,8 @@ class BalanceService:
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/83.0.4103.116 Safari/537.36"
         )
+
+        self._logger = logging.getLogger("WorkingLoop.BalanceService")
 
         self._networks = {
             "PropellerAds": {
@@ -226,4 +230,4 @@ class BalanceService:
             if evadav_balance is not None:
                 self.check_balance("Evadav", evadav_balance)
 
-            time.sleep(60)
+            time.sleep(900)

@@ -1,4 +1,6 @@
+import logging
 import os
+import platform
 import threading
 import time
 from queue import Queue
@@ -11,12 +13,28 @@ from services.updater import Updater
 class WorkingLoop:
     def __init__(self):
         telegram_access_token = os.environ.get("TELEGRAM_ACCESS_TOKEN")
+
+        self._logger = logging.getLogger("WorkingLoop")
+        self._configure_logger()
+
         self._updater = Updater(telegram_access_token)
         self._update_handler = UpdateHandler(telegram_access_token)
         self._balance_service = BalanceService(telegram_access_token)
 
         self._lock = threading.Lock()
         self._updates_queue = Queue()
+
+    def _configure_logger(self):
+        self._logger.setLevel(logging.DEBUG)
+
+        file_handler = logging.FileHandler("log.log", "w", "utf-8")
+        file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        self._logger.addHandler(file_handler)
+
+        self._logger.info(f"Platform: {platform.system().lower()}")
+        self._logger.info(f"WD: {os.getcwd()}")
+
+        self._logger.info("Logger configured.")
 
     def _listen_for_updates(self):
         offset = None
