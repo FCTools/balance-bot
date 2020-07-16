@@ -1,13 +1,18 @@
 import os
 import sqlite3
+import threading
+
+from services.singleton import Singleton
 
 
-class Database:
+class Database(metaclass=Singleton):
     def __init__(self):
         self._database_name = "info.sqlite3"
 
         if not os.path.exists(self._database_name):
             self._create_database()
+
+        self._lock = threading.Lock()
 
     def _create_database(self):
         connection = sqlite3.connect(self._database_name)
@@ -30,14 +35,16 @@ class Database:
         return users_list
 
     def get_notification_levels(self, network):
-        with sqlite3.connect(self._database_name) as connection:
-            notification_levels_query = connection.execute(f"SELECT * from networks WHERE name='{network}'")
-            levels = notification_levels_query.fetchone()
+        with self._lock:
+            with sqlite3.connect(self._database_name) as connection:
+                notification_levels_query = connection.execute(f"SELECT * from networks WHERE name='{network}'")
+                levels = notification_levels_query.fetchone()
 
-            notification_levels = [
-                {"level": "info", "balance": levels[1]},
-                {"level": "warning", "balance": levels[2]},
-                {"level": "critical", "balance": levels[3]},
-            ]
+                notification_levels = {"info": levels[1], "warning": levels[2], "critical": levels[3]}
 
-        return notification_levels
+            return notification_levels
+
+    def set_notification_level_balance(self, network, level, balance):
+        with self._lock:
+            with sqlite3.connect(self._database_name) as connection:
+                connection.execute(f"UPDATE networks SET {level}_level={balance} WHERE name='{network}'")

@@ -19,6 +19,18 @@ class UpdateHandler:
         ]
 
         self._available_networks = ["prop", "eva", "pushhouse"]
+        self._available_notification_levels = ['info', 'warning', 'critical']
+
+    @staticmethod
+    def _network_alias_to_name(alias):
+        if alias == 'prop':
+            return 'PropellerAds'
+        elif alias == 'eva':
+            return 'Evadav'
+        elif alias == 'pushhouse':
+            return 'Push.house'
+
+        return 'Unknown'
 
     def is_authorized(self, chat_id):
         users_list = self._database.get_users()
@@ -48,7 +60,8 @@ class UpdateHandler:
             elif command_text[0] == "help":
                 self._help(chat_id)
             elif command_text[0] in ["set_info_balance", "set_warning_balance", "set_critical_balance"]:
-                self._set_balance_value(chat_id, command_text[1:])
+                level = command_text[0].split('_')[1]
+                self._set_balance_value(chat_id, level, *command_text[1:])
             elif command_text[0] == "get_balance":
                 if len(command_text) < 2:
                     self._get_balance(chat_id, "")
@@ -58,16 +71,57 @@ class UpdateHandler:
         else:
             self._sender.send_message(chat_id, "Permission denied.")
 
-    def _set_balance_value(self, *args):
-        if len(args) < 3:
-            pass
-            # incorrect args
+    def balance_is_valid(self, network, level, balance_to_set):
+        network = self._network_alias_to_name(network)
+        current_levels = self._database.get_notification_levels(network)
+
+        if level == 'info':
+            warning_balance = current_levels['warning']
+
+            if balance_to_set < warning_balance:
+                return False, "Balance for info-level can't be less or equal than balance for warning-level."
+        elif level == 'warning':
+            info_balance = current_levels['info']
+            critical_balance = current_levels['critical']
+
+            if balance_to_set >= info_balance:
+                return False, "Balance for warning-level can't be greater or equal than balance for info-level."
+            elif balance_to_set <= critical_balance:
+                return False, "Balance for warning level can't be less or equal than balance for critical-level."
+        elif level == 'critical':
+            warning_balance = current_levels['warning']
+
+            if balance_to_set >= warning_balance:
+                return False, "Balance for critical-level can't be greater or equal than balance for warning-level."
+
+        return True, "OK"
+
+    def _set_balance_value(self, chat_id, level, *args):
+        if len(args) < 2:
+            self._sender.send_message(chat_id, 'Incorrect number of arguments.')
+            return
 
         network = args[0]
-        level = args[1]
-        balance = args[2]
+        balance = args[1]
 
-        # set balance
+        if network not in self._available_networks:
+            self._sender.send_message(chat_id, 'Incorrect network. I support only prop, pushhouse and eva.')
+            return
+
+        try:
+            balance = float(balance)
+        except TypeError:
+            self._sender.send_message(chat_id, "Incorrect balance value (can't convert it to real number).")
+            return
+
+        balance_is_correct, error_message = self.balance_is_valid(network, level, balance)
+
+        if not balance_is_correct:
+            self._sender.send_message(chat_id, error_message)
+            return
+
+        self._database.set_notification_level_balance(self._network_alias_to_name(network), level, balance)
+        self._sender.send_message(chat_id, "Success.")
 
     def _get_balance(self, chat_id, network_alias):
         if network_alias and network_alias not in self._available_networks:
@@ -90,7 +144,7 @@ class UpdateHandler:
             return
 
         if balance:
-            self._sender.send_message(chat_id, f"{network_name} balance is {balance}$")
+            self._sender.send_message(chat_id, f"<b>{network_name}</b> balance is {balance}$")
         else:
             self._sender.send_message(chat_id, "Sorry, something went wrong.")
 

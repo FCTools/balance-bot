@@ -65,9 +65,9 @@ class BalanceService(metaclass=Singleton):
         last_balance = 10 ** 9  # just very big number
 
         for level in notification_levels:
-            if last_balance > level["balance"] > balance:
-                last_balance = level["balance"]
-                notification_level = level["level"]
+            if last_balance > notification_levels[level] > balance:
+                last_balance = notification_levels[level]
+                notification_level = level
 
         if not notification_level:
             return
@@ -180,16 +180,20 @@ class BalanceService(metaclass=Singleton):
         dashboard = self._networks["Push.house"]["session"]["instance"].get("https://push.house/dashboard")
 
         soup_page = BeautifulSoup(dashboard.text, "lxml")
-        balance = float(
-            str(
-                soup_page.select(
-                    "body > div.wrapper100.headerblock > div > div > " "div.col.flexible > div > div.amountBlock > span"
-                )[0]
+
+        try:
+            balance = float(
+                str(
+                    soup_page.select(
+                        "body > div.wrapper100.headerblock > div > div > " "div.col.flexible > div > div.amountBlock > span"
+                    )[0]
+                )
+                .split("$")[1]
+                .split("<")[0]
+                .strip()
             )
-            .split("$")[1]
-            .split("<")[0]
-            .strip()
-        )
+        except IndexError:
+            return
 
         return balance
 
