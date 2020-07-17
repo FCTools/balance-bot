@@ -1,3 +1,6 @@
 from services.working_loop import WorkingLoop
 
-WorkingLoop().start()
+try:
+    WorkingLoop().start()
+except KeyboardInterrupt:
+    exit(0)

@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from datetime import timedelta
@@ -11,6 +12,7 @@ from datetime import datetime
 import time
 
 from services.database_cursor import Database
+from services import requests_manager
 from services.sender import Sender
 from services.singleton import Singleton
 
@@ -49,6 +51,8 @@ class BalanceService(metaclass=Singleton):
             },
         }
 
+        self._logger.info("Balance service initialized.")
+
     def session_is_active(self, network):
         session_lifetime = 1  # hours
 
@@ -86,7 +90,8 @@ class BalanceService(metaclass=Singleton):
         session = requests.Session()
         session.headers.update({"User-Agent": self._user_agent})
 
-        post_request = session.post(
+        auth_response = requests_manager.post(
+            session,
             "https://partners.propellerads.com/v1.0/login_check",
             {
                 "username": login,
@@ -94,9 +99,33 @@ class BalanceService(metaclass=Singleton):
                 "fingerprint": "df9baa6341c7a67c40bcc3df469cf017",
                 "type": "ROLE_ADVERTISER",
             },
-        ).json()
+        )
 
-        self._networks["PropellerAds"]["access_token"] = post_request["result"]["accessToken"]
+        if not isinstance(auth_response, requests.Response):
+            self._logger.error(f"Error occurred while trying to authorize on propeller: {auth_response}")
+            return False
+
+        if auth_response.status_code != 200:
+            self._logger.error(f"Can't authorize on propeller, request status code: {auth_response.status_code}.")
+            return False
+
+        try:
+            request_json_data = auth_response.json()
+        except json.JSONDecodeError as decode_error:
+            self._logger.error(
+                f"Can't authorize on propeller, catch decode error while parsing this document: {decode_error.doc}."
+            )
+            return False
+
+        try:
+            self._networks["PropellerAds"]["access_token"] = request_json_data["result"]["accessToken"]
+        except KeyError:
+            self._logger.error(
+                f"Can't authorize on propeller, catch KeyError while trying to get accessToken from dashboard. "
+                f"Dashboard data: {request_json_data}"
+            )
+            return False
+
         self._networks["PropellerAds"]["session"] = {"instance": session, "creation_time": datetime.utcnow()}
 
         return True
@@ -106,24 +135,49 @@ class BalanceService(metaclass=Singleton):
             if not self.propeller_authorize():
                 return
 
-        balance = (
-            self._networks["PropellerAds"]["session"]["instance"]
-            .get(
-                "https://partners.propellerads.com/v1.0/advertiser/dashboard/",
-                headers={"Authorization": f"Bearer {self._networks['PropellerAds']['access_token']}"},
-            )
-            .json()["result"]["balance"]
+        balance_response = requests_manager.get(
+            self._networks["PropellerAds"]["session"]["instance"],
+            "https://partners.propellerads.com/v1.0/advertiser/dashboard/",
+            headers={"Authorization": f"Bearer {self._networks['PropellerAds']['access_token']}"},
         )
 
-        return balance
+        if not isinstance(balance_response, requests.Response):
+            self._logger.error(f"Error occurred while trying to get propeller balance: {balance_response}")
+            return
+
+        try:
+            balance_json = balance_response.json()
+        except json.JSONDecodeError as decode_error:
+            self._logger.error(
+                f"Decode error occurred while trying to parse balance response for propeller, doc:"
+                f"{decode_error.doc}"
+            )
+            return
+
+        try:
+            return balance_json["result"]["balance"]
+        except KeyError:
+            self._logger.error(
+                f"KeyError while trying to get balance from balance response for propeller. JSON data: {balance_json}"
+            )
 
     def pushhouse_authorize(self):
         session = requests.Session()
         session.headers.update({"User-Agent": self._user_agent})
 
-        auth_page = session.get("https://push.house/auth/login")
+        auth_page = requests_manager.get(session, "https://push.house/auth/login")
+
+        if not isinstance(auth_page, requests.Response):
+            self._logger.error(f"Error occurred while trying to get login page for pushhouse: {auth_page}")
+            return False
+
         soup = BeautifulSoup(auth_page.text, "lxml")
-        data_sitekey = str(soup.select("#mainBlock > div > form > div:nth-child(4) > div")[0]).split('"')[3]
+
+        try:
+            data_sitekey = str(soup.select("#mainBlock > div > form > div:nth-child(4) > div")[0]).split('"')[3]
+        except IndexError:
+            self._logger.error("Can't parse data-sitekey from auth page html-code.")
+            return False
 
         solver = recaptchaV2Proxyless()
         # solver.set_verbose(False) - you can do this for disable console logging
@@ -144,7 +198,8 @@ class BalanceService(metaclass=Singleton):
             "g-recaptcha-response": g_response,
         }
 
-        session.post(
+        auth_response = requests_manager.post(
+            session,
             "https://push.house/auth/login",
             data=auth_data,
             headers={
@@ -168,8 +223,16 @@ class BalanceService(metaclass=Singleton):
             },
         )
 
-        self._networks["Push.house"]["session"] = {"instance": session, "creation_time": datetime.utcnow()}
+        if not isinstance(auth_response, requests.Response):
+            self._logger.error(f"Error occurred while trying to authorize on pushhouse: {auth_response}")
+            return False
+        if auth_response.status_code != 200:
+            self._logger.error(
+                f"Can't authorize on pushhouse: get auth-response with status code {auth_response.status_code}"
+            )
+            return False
 
+        self._networks["Push.house"]["session"] = {"instance": session, "creation_time": datetime.utcnow()}
         return True
 
     def get_pushhouse_balance(self):
@@ -177,15 +240,27 @@ class BalanceService(metaclass=Singleton):
             if not self.pushhouse_authorize():
                 return
 
-        dashboard = self._networks["Push.house"]["session"]["instance"].get("https://push.house/dashboard")
+        dashboard_response = requests_manager.get(
+            self._networks["Push.house"]["session"]["instance"], "https://push.house/dashboard"
+        )
 
-        soup_page = BeautifulSoup(dashboard.text, "lxml")
+        if not isinstance(dashboard_response, requests.Response):
+            self._logger.error(f"Error occurred while trying to get pushhouse dashboard: {dashboard_response}")
+            return
+        if dashboard_response.status_code != 200:
+            self._logger.error(
+                f"Can't get pushhouse balance: get dashboard response with status code {dashboard_response.status_code}"
+            )
+            return
+
+        soup_page = BeautifulSoup(dashboard_response.text, "lxml")
 
         try:
             balance = float(
                 str(
                     soup_page.select(
-                        "body > div.wrapper100.headerblock > div > div > " "div.col.flexible > div > div.amountBlock > span"
+                        "body > div.wrapper100.headerblock > div > div > "
+                        "div.col.flexible > div > div.amountBlock > span"
                     )[0]
                 )
                 .split("$")[1]
@@ -193,19 +268,43 @@ class BalanceService(metaclass=Singleton):
                 .strip()
             )
         except IndexError:
+            self._logger.error("Can't get pushhouse balance from dashboard-page.")
             return
 
         return balance
 
     def get_evadav_balance(self):
         method = "account/balance"
-        balance = requests.get(
+
+        balance_response = requests_manager.get(
+            requests.Session(),
             f"https://evadav.com/api/v2.0/{method}",
             params={"access-token": self._networks["Evadav"]["access_token"]},
             headers={"accept": "application/json"},
-        ).json()["data"]["advertiser"]
+        )
 
-        return balance
+        if not isinstance(balance_response, requests.Response):
+            self._logger.error(f"Error occurred while trying to get balance from eva: {balance_response}")
+            return
+        if balance_response.status_code != 200:
+            self._logger.error(f"Can't get eva balance: get response with status code {balance_response.status_code}")
+            return
+
+        try:
+            balance_response_json = balance_response.json()
+        except json.JSONDecodeError as decode_error:
+            self._logger.error(
+                f"Decode error occurred while trying to parse balance response for evadav, doc:" f"{decode_error.doc}"
+            )
+            return
+
+        try:
+            return balance_response_json["data"]["advertiser"]
+        except KeyError:
+            self._logger.error(
+                f"KeyError occurred while trying to get eva balance from balance_response_json. "
+                f"Value: {balance_response_json}"
+            )
 
     def send_status_message(self, network, balance, level):
         message = f"<b>{level.upper()}</b>: {network} balance is {balance}$"

@@ -1,3 +1,5 @@
+import logging
+
 from services.balance_service import BalanceService
 from services.database_cursor import Database
 from services.sender import Sender
@@ -9,28 +11,32 @@ class UpdateHandler:
         self._database = Database()
         self._balance_service = BalanceService(telegram_access_token)
 
+        self._logger = logging.getLogger("WorkingLoop.UpdateHandler")
+
         self._available_commands = [
-            "set_info_balance",
-            "set_warning_balance",
-            "set_critical_balance",
-            "get_balance",
-            "start",
-            "help",
+            "/set_info_balance",
+            "/set_warning_balance",
+            "/set_critical_balance",
+            "/get_balance",
+            "/start",
+            "/help",
         ]
 
         self._available_networks = ["prop", "eva", "pushhouse"]
-        self._available_notification_levels = ['info', 'warning', 'critical']
+        self._available_notification_levels = ["info", "warning", "critical"]
+
+        self._logger.info("UpdateHandler initialized.")
 
     @staticmethod
     def _network_alias_to_name(alias):
-        if alias == 'prop':
-            return 'PropellerAds'
-        elif alias == 'eva':
-            return 'Evadav'
-        elif alias == 'pushhouse':
-            return 'Push.house'
+        if alias == "prop":
+            return "PropellerAds"
+        elif alias == "eva":
+            return "Evadav"
+        elif alias == "pushhouse":
+            return "Push.house"
 
-        return 'Unknown'
+        return "Unknown"
 
     def is_authorized(self, chat_id):
         users_list = self._database.get_users()
@@ -41,55 +47,89 @@ class UpdateHandler:
 
         return False
 
-    def handle_command(self, command):
-        chat_id = command["message"]["from"]["id"]
+    @staticmethod
+    def is_command(update):
+        return (
+            "message" in update
+            and "entities" in update["message"]
+            and update["message"]["entities"][0]["type"] == "bot_command"
+        )
 
-        if self.is_authorized(chat_id):
-            command_text = command["message"]["text"].strip()
+    @staticmethod
+    def extract_chat_id(update):
+        if "message" in update and "from" in update["message"] and "id" in update["message"]["from"]:
+            return update["message"]["from"]["id"]
 
-            if not command_text.startswith("/") or command_text[1:].split()[0] not in self._available_commands:
-                self._sender.send_message(
-                    chat_id, "Unknown command. You can get list of available commands using /help."
-                )
-                return
+    def command_is_valid(self, update):
+        chat_id = self.extract_chat_id(update)
 
-            command_text = command_text[1:].split()
+        if not chat_id:
+            self._logger.warning(f"Can't extract chat_id from json-package: {update}")
+            return False
 
-            if command_text[0] == "start":
-                self._start(chat_id)
-            elif command_text[0] == "help":
-                self._help(chat_id)
-            elif command_text[0] in ["set_info_balance", "set_warning_balance", "set_critical_balance"]:
-                level = command_text[0].split('_')[1]
-                self._set_balance_value(chat_id, level, *command_text[1:])
-            elif command_text[0] == "get_balance":
-                if len(command_text) < 2:
-                    self._get_balance(chat_id, "")
-                else:
-                    self._get_balance(chat_id, command_text[1])
+        if not self.is_command(update):
+            self._logger.info(f"Get non-command update: {update}")
+            self._sender.send_message(chat_id, "I support only commands. Use /help for details.")
+            return False
 
-        else:
+        if not self.is_authorized(chat_id):
+            self._logger.info(f"Message from unauthorized user: {update}")
             self._sender.send_message(chat_id, "Permission denied.")
+            return False
+
+        return True
+
+    def handle_command(self, update):
+        if not self.command_is_valid(update):
+            return
+
+        chat_id = self.extract_chat_id(update)
+        command_parts = update["message"]["text"].strip().split()
+
+        command = command_parts[0]
+        args = command_parts[1:]
+
+        if command not in self._available_commands:
+            self._sender.send_message(chat_id, "Unknown command. You can get list of available commands using /help.")
+            return
+
+        if command == "/start":
+            self._start(chat_id)
+
+        elif command == "/help":
+            self._help(chat_id)
+
+        elif command in ["/set_info_balance", "/set_warning_balance", "/set_critical_balance"]:
+            level = command.split("_")[1]
+            self._set_balance_value(chat_id, level, *args)
+
+        elif command == "/get_balance":
+            if not args:
+                self._get_balance(chat_id, "")
+            elif len(args) == 1:
+                self._get_balance(chat_id, args[0])
+            else:
+                self._sender.send_message(chat_id, f"Invalid number of arguments (expected 0 or 1, got {len(args)}).")
 
     def balance_is_valid(self, network, level, balance_to_set):
         network = self._network_alias_to_name(network)
         current_levels = self._database.get_notification_levels(network)
 
-        if level == 'info':
-            warning_balance = current_levels['warning']
+        if level == "info":
+            warning_balance = current_levels["warning"]
 
             if balance_to_set < warning_balance:
                 return False, "Balance for info-level can't be less or equal than balance for warning-level."
-        elif level == 'warning':
-            info_balance = current_levels['info']
-            critical_balance = current_levels['critical']
+        elif level == "warning":
+            info_balance = current_levels["info"]
+            critical_balance = current_levels["critical"]
 
             if balance_to_set >= info_balance:
                 return False, "Balance for warning-level can't be greater or equal than balance for info-level."
             elif balance_to_set <= critical_balance:
                 return False, "Balance for warning level can't be less or equal than balance for critical-level."
-        elif level == 'critical':
-            warning_balance = current_levels['warning']
+        elif level == "critical":
+            warning_balance = current_levels["warning"]
 
             if balance_to_set >= warning_balance:
                 return False, "Balance for critical-level can't be greater or equal than balance for warning-level."
@@ -97,15 +137,15 @@ class UpdateHandler:
         return True, "OK"
 
     def _set_balance_value(self, chat_id, level, *args):
-        if len(args) < 2:
-            self._sender.send_message(chat_id, 'Incorrect number of arguments.')
+        if len(args) != 2:
+            self._sender.send_message(chat_id, f"Incorrect number of arguments (expected 2, got {len(args)}).")
             return
 
         network = args[0]
         balance = args[1]
 
         if network not in self._available_networks:
-            self._sender.send_message(chat_id, 'Incorrect network. I support only prop, pushhouse and eva.')
+            self._sender.send_message(chat_id, "Incorrect network. I support only prop, pushhouse and eva.")
             return
 
         try:
@@ -138,9 +178,8 @@ class UpdateHandler:
             network_name = "Push.house"
             balance = self._balance_service.get_pushhouse_balance()
         else:
-            self._get_balance(chat_id, "prop")
-            self._get_balance(chat_id, "eva")
-            self._get_balance(chat_id, "pushhouse")
+            for network in self._available_networks:
+                self._get_balance(chat_id, network)
             return
 
         if balance:
