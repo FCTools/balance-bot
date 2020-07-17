@@ -5,23 +5,15 @@ def catch_network_errors(method):
     def wrapper(*args, **kwargs):
         try:
             return method(*args, **kwargs)
-        except requests.exceptions.HTTPError as exception:
-            return exception
-
-        except requests.exceptions.ConnectTimeout as exception:
-            return exception
-
-        except requests.exceptions.Timeout as exception:
-            return exception
-
-        except requests.exceptions.ConnectionError as exception:
-            return exception
-
-        except requests.exceptions.RequestException as exception:
-            return exception
-
-        except Exception as exception:
-            return exception
+        except (
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectTimeout,
+            requests.exceptions.Timeout,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.RequestException,
+            Exception,
+        ) as network_error:
+            return network_error
 
     return wrapper
 

@@ -10,20 +10,14 @@ def catch_database_error(method):
     def wrapper(*args, **kwargs):
         try:
             return method(*args, **kwargs)
-        except sqlite3.ProgrammingError as programming_error:
-            return False, programming_error
-
-        except sqlite3.OperationalError as operational_error:
-            return False, operational_error
-
-        except sqlite3.DatabaseError as database_error:
+        except (
+            sqlite3.ProgrammingError,
+            sqlite3.OperationalError,
+            sqlite3.DatabaseError,
+            sqlite3.Error,
+            Exception,
+        ) as database_error:
             return False, database_error
-
-        except sqlite3.Error as error:
-            return False, error
-
-        except Exception as exception:
-            return False, exception
 
     return wrapper
 
@@ -47,6 +41,7 @@ class Database(metaclass=Singleton):
                 exit(-1)
 
         self._lock = threading.Lock()
+        self._logger.info("Database initialized.")
 
     @catch_database_error
     def _create_database(self):
