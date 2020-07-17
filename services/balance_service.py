@@ -339,7 +339,9 @@ class BalanceService(metaclass=Singleton):
             else:
                 self._networks["Push.house"]["session"] = None
                 pushhouse_balance = self.get_pushhouse_balance()
-                self.check_balance("Push.house", pushhouse_balance)
+
+                if pushhouse_balance is not None:
+                    self.check_balance("Push.house", pushhouse_balance)
 
             evadav_balance = self.get_evadav_balance()
 
