@@ -39,7 +39,11 @@ class UpdateHandler:
         return "Unknown"
 
     def is_authorized(self, chat_id):
-        users_list = self._database.get_users()
+        success, users_list = self._database.get_users()
+
+        if not success:
+            self._logger.error(f"Database error occurred while trying to get users: {users_list}")
+            return False
 
         for user in users_list:
             if chat_id == user["chat_id"]:
@@ -113,7 +117,11 @@ class UpdateHandler:
 
     def balance_is_valid(self, network, level, balance_to_set):
         network = self._network_alias_to_name(network)
-        current_levels = self._database.get_notification_levels(network)
+        success, current_levels = self._database.get_notification_levels(network)
+
+        if not success:
+            self._logger.error(f"Database error occurred while trying to get notification levels: {current_levels}")
+            return False
 
         if level == "info":
             warning_balance = current_levels["warning"]

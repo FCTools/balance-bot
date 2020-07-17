@@ -70,8 +70,11 @@ class WorkingLoop:
     def start(self):
         self._logger.info("WorkingLoop started.")
 
-        handling_thread = threading.Thread(target=self._handle_updates, daemon=True)
-        balances_check_thread = threading.Thread(target=self._balance_service.check_balances, daemon=True)
+        handling_thread = threading.Thread(target=self._handle_updates, daemon=True, name="HandlingThread")
+        balances_check_thread = threading.Thread(
+            target=self._balance_service.check_balances, daemon=True, name="BalancesCheckingThread"
+        )
+        threading.current_thread().name = "ListeningThread"
 
         handling_thread.start()
         balances_check_thread.start()

@@ -63,7 +63,11 @@ class BalanceService(metaclass=Singleton):
     def check_balance(self, network, balance):
         notifications_interval = 2  # hours
 
-        notification_levels = self._database_cursor.get_notification_levels(network)
+        success, notification_levels = self._database_cursor.get_notification_levels(network)
+
+        if not success:
+            self._logger.error(f"Can't get notification levels from database: {notification_levels}")
+            return
 
         notification_level = None
         last_balance = 10 ** 9  # just very big number
@@ -189,6 +193,7 @@ class BalanceService(metaclass=Singleton):
         g_response = solver.solve_and_return_solution()
 
         if g_response == 0:
+            self._logger.error("Captcha solving error.")
             return False
 
         auth_data = {
@@ -308,7 +313,11 @@ class BalanceService(metaclass=Singleton):
 
     def send_status_message(self, network, balance, level):
         message = f"<b>{level.upper()}</b>: {network} balance is {balance}$"
-        users_list = self._database_cursor.get_users()
+        success, users_list = self._database_cursor.get_users()
+
+        if not success:
+            self._logger.error(f"Database error occurred while trying to get users: {users_list}")
+            return
 
         for user in users_list:
             self._sender.send_message(user["chat_id"], message)
@@ -326,6 +335,10 @@ class BalanceService(metaclass=Singleton):
             pushhouse_balance = self.get_pushhouse_balance()
 
             if pushhouse_balance is not None:
+                self.check_balance("Push.house", pushhouse_balance)
+            else:
+                self._networks["Push.house"]["session"] = None
+                pushhouse_balance = self.get_pushhouse_balance()
                 self.check_balance("Push.house", pushhouse_balance)
 
             evadav_balance = self.get_evadav_balance()
