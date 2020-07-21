@@ -83,7 +83,7 @@ class BalanceService(metaclass=Singleton):
         if not self._networks[network]["last_notification_sending_time"] or (
             notification_level != self._networks[network]["last_notification"]
             and datetime.utcnow() - self._networks[network]["last_notification_sending_time"]
-            < timedelta(hours=notifications_interval)
+            > timedelta(hours=notifications_interval)
         ):
             self.send_status_message(network, balance, notification_level)
 
