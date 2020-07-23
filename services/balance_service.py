@@ -61,7 +61,7 @@ class BalanceService(metaclass=Singleton):
         ] < timedelta(hours=session_lifetime)
 
     def check_balance(self, network, balance):
-        notifications_interval = 2  # hours
+        notifications_interval = 0.5  # hours
 
         success, notification_levels = self._database_cursor.get_notification_levels(network)
 
@@ -80,9 +80,10 @@ class BalanceService(metaclass=Singleton):
         if not notification_level:
             return
 
-        if not self._networks[network]["last_notification_sending_time"] or (
-            notification_level != self._networks[network]["last_notification"]
-            and datetime.utcnow() - self._networks[network]["last_notification_sending_time"]
+        if (
+            not self._networks[network]["last_notification_sending_time"]
+            or notification_level != self._networks[network]["last_notification"]
+            or datetime.utcnow() - self._networks[network]["last_notification_sending_time"]
             > timedelta(hours=notifications_interval)
         ):
             self.send_status_message(network, balance, notification_level)
@@ -326,6 +327,8 @@ class BalanceService(metaclass=Singleton):
         self._networks[network]["last_notification_sending_time"] = datetime.utcnow()
 
     def check_balances(self):
+        sleep_time = 900  # seconds
+
         while True:
             propeller_balance = self.get_propeller_balance()
 
@@ -348,4 +351,4 @@ class BalanceService(metaclass=Singleton):
             if evadav_balance is not None:
                 self.check_balance("Evadav", evadav_balance)
 
-            time.sleep(900)
+            time.sleep(sleep_time)
