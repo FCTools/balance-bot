@@ -54,14 +54,14 @@ class BalanceService(metaclass=Singleton):
         self._logger.info("Balance service initialized.")
 
     def session_is_active(self, network):
-        session_lifetime = 1  # hours
+        session_lifetime = 3  # hours
 
         return self._networks[network]["session"] and datetime.utcnow() - self._networks[network]["session"][
             "creation_time"
         ] < timedelta(hours=session_lifetime)
 
     def check_balance(self, network, balance):
-        notifications_interval = 0.5  # hours
+        notifications_interval = 1.5  # hours
 
         success, notification_levels = self._database_cursor.get_notification_levels(network)
 
