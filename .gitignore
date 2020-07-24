@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+# Environment variables file, runnig script and temporary file
+set_env.sh
+run_bot.sh
+tmp.py
+
 # Distribution / packaging
 .Python
 build/
