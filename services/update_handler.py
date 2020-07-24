@@ -18,6 +18,7 @@ class UpdateHandler:
             "/set_warning_balance",
             "/set_critical_balance",
             "/get_balance",
+            "/set_notifications_interval",
             "/start",
             "/help",
         ]
@@ -117,6 +118,14 @@ class UpdateHandler:
             else:
                 self._sender.send_message(chat_id, f"Invalid number of arguments (expected 0 or 1, got {len(args)}).")
 
+        elif command == "/set_notifications_interval":
+            if not args:
+                self._sender.send_message(chat_id, f"Please specify interval in hours (min: 0.34, max: 6).")
+            elif len(args) == 1:
+                self._set_notifications_interval(chat_id, args[0])
+            else:
+                self._sender.send_message(chat_id, f"Invalid number of arguments (expected 1, got {len(args)}).")
+
     def balance_is_valid(self, network, level, balance_to_set):
         network = self._network_alias_to_name(network)
         success, current_levels = self._database.get_notification_levels(network)
@@ -199,6 +208,19 @@ class UpdateHandler:
             self._sender.send_message(chat_id, f"<b>{network_name}</b> balance is {balance}$")
         else:
             self._sender.send_message(chat_id, "Sorry, something went wrong.")
+
+    def _set_notifications_interval(self, chat_id, interval):
+        try:
+            interval = float(interval)
+        except TypeError:
+            self._sender.send_message(chat_id, "Incorrect interval (not a number).")
+            return
+
+        if not (0.34 <= interval <= 6):
+            self._sender.send_message(chat_id, "Interval must be from 0.34 to 6.")
+            return
+
+        self._balance_service.set_notifications_interval(chat_id, interval)
 
     def _start(self, chat_id):
         self._sender.send_message(chat_id, "Hello!")

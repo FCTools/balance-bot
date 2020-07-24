@@ -68,6 +68,10 @@ class BalanceService(metaclass=Singleton):
 
         self._logger.info("Balance service initialized.")
 
+    def set_notifications_interval(self, chat_id, interval):
+        self._notifications_interval = interval
+        self._sender.send_message(chat_id, "Success.")
+
     def _read_user_agents(self):
         with open("user_agents.csv", "r", encoding="utf-8") as user_agents_file:
             data = user_agents_file.readlines()
