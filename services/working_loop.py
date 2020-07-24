@@ -12,10 +12,18 @@ from services.updater import Updater
 
 class WorkingLoop:
     def __init__(self):
-        telegram_access_token = os.environ.get("TELEGRAM_ACCESS_TOKEN")
-
         self._logger = logging.getLogger("WorkingLoop")
         self._configure_logger()
+
+        environment_is_correct, errors_list = self._environment_is_correct()
+        if not environment_is_correct:
+            for error in errors_list:
+                self._logger.critical(error)
+            exit(-1)
+        else:
+            self._logger.info("Environment is correct.")
+
+        telegram_access_token = os.environ.get("TELEGRAM_ACCESS_TOKEN")
 
         self._updater = Updater(telegram_access_token)
         self._update_handler = UpdateHandler(telegram_access_token)
@@ -42,6 +50,36 @@ class WorkingLoop:
         self._logger.info(f"WD: {os.getcwd()}")
 
         self._logger.info("Logger configured.")
+
+    def _environment_is_correct(self):
+        correct = True
+        errors = []
+
+        required_files_list = ["user_agents.csv"]
+        required_env_variables_list = [
+            "TELEGRAM_ACCESS_TOKEN",
+            "PROPELLER_LOGIN",
+            "PROPELLER_PASSWORD",
+            "PROPELLER_FINGERPRINT",
+            "EVADAV_ACCESS_TOKEN",
+            "PUSHHOUSE_EMAIL",
+            "PUSHHOUSE_PASSWORD",
+            "DAO_EMAIL",
+            "DAO_PASSWORD",
+            "CAPTCHA_SERVICE_KEY",
+        ]
+
+        for file in required_files_list:
+            if not os.path.exists(file):
+                correct = False
+                errors.append("Can't find files with user agents list (user_agents.csv).")
+
+        for env in required_env_variables_list:
+            if not os.getenv(env):
+                correct = False
+                errors.append(f"Can't find required environment variable: {env}")
+
+        return correct, errors
 
     def _listen_for_updates(self):
         offset = None

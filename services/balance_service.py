@@ -32,8 +32,9 @@ class BalanceService(metaclass=Singleton):
 
         self._networks = {
             "PropellerAds": {
-                "login": os.environ.get("PROPELLER_LOGIN"),
-                "password": os.environ.get("PROPELLER_PASSWORD"),
+                "login": os.getenv("PROPELLER_LOGIN"),
+                "password": os.getenv("PROPELLER_PASSWORD"),
+                "fingerprint": os.getenv("PROPELLER_FINGERPRINT"),
                 "last_notification": None,
                 "last_notification_sending_time": None,
                 "session": {},
@@ -42,23 +43,28 @@ class BalanceService(metaclass=Singleton):
             "Evadav": {
                 "last_notification": None,
                 "last_notification_sending_time": None,
-                "access_token": os.environ.get("EVADAV_ACCESS_TOKEN"),
+                "access_token": os.getenv("EVADAV_ACCESS_TOKEN"),
             },
             "Push.house": {
-                "email": os.environ.get("PUSHHOUSE_EMAIL"),
-                "password": os.environ.get("PUSHHOUSE_PASSWORD"),
+                "email": os.getenv("PUSHHOUSE_EMAIL"),
+                "password": os.getenv("PUSHHOUSE_PASSWORD"),
                 "last_notification": None,
                 "last_notification_sending_time": None,
                 "session": {},
             },
             "DaoPush": {
-                "login": os.environ.get("DAO_EMAIL"),
-                "password": os.environ.get("DAO_PASSWORD"),
+                "login": os.getenv("DAO_EMAIL"),
+                "password": os.getenv("DAO_PASSWORD"),
                 "last_notification": None,
                 "last_notification_sending_time": None,
                 "session": {},
             },
         }
+
+        self._session_lifetime = float(os.getenv("SESSION_LIFETIME", 2))  # hours
+        self._balances_checking_interval = float(os.getenv("BALANCES_CHECKING_INTERVAL", 900))  # seconds
+        self._notifications_interval = float(os.getenv("NOTIFICATIONS_INTERVAL", 2))  # hours
+        self._captcha_api_key = os.getenv("CAPTCHA_SERVICE_KEY")
 
         self._logger.info("Balance service initialized.")
 
@@ -71,15 +77,11 @@ class BalanceService(metaclass=Singleton):
         self._user_agent = choice(self._user_agents_list).strip()
 
     def session_is_active(self, network):
-        session_lifetime = 3  # hours
-
         return self._networks[network]["session"] and datetime.utcnow() - self._networks[network]["session"][
             "creation_time"
-        ] < timedelta(hours=session_lifetime)
+        ] < timedelta(hours=self._session_lifetime)
 
     def check_balance(self, network, balance):
-        notifications_interval = 1.5  # hours
-
         success, notification_levels = self._database_cursor.get_notification_levels(network)
 
         if not success:
@@ -101,15 +103,12 @@ class BalanceService(metaclass=Singleton):
             not self._networks[network]["last_notification_sending_time"]
             or notification_level != self._networks[network]["last_notification"]
             or datetime.utcnow() - self._networks[network]["last_notification_sending_time"]
-            > timedelta(hours=notifications_interval)
+            > timedelta(hours=self._notifications_interval)
         ):
             self.send_status_message(network, balance, notification_level)
 
     def propeller_authorize(self):
         self._update_user_agent()
-
-        login = self._networks["PropellerAds"]["login"]
-        password = self._networks["PropellerAds"]["password"]
 
         session = requests.Session()
         session.headers.update({"User-Agent": self._user_agent})
@@ -118,9 +117,9 @@ class BalanceService(metaclass=Singleton):
             session,
             "https://partners.propellerads.com/v1.0/login_check",
             {
-                "username": login,
-                "password": password,
-                "fingerprint": "df9baa6341c7a67c40bcc3df469cf017",
+                "username": self._networks["PropellerAds"]["login"],
+                "password": self._networks["PropellerAds"]["password"],
+                "fingerprint": self._networks["PropellerAds"]["fingerprint"],
                 "type": "ROLE_ADVERTISER",
             },
         )
@@ -208,7 +207,7 @@ class BalanceService(metaclass=Singleton):
         solver = recaptchaV2Proxyless()
         # solver.set_verbose(False) - you can do this for disable console logging
         solver.set_verbose(1)
-        solver.set_key(os.environ.get("CAPTCHA_SERVICE_KEY"))
+        solver.set_key(self._captcha_api_key)
         solver.set_website_url("https://push.house/auth/login")
         solver.set_website_key(data_sitekey)
 
@@ -355,7 +354,7 @@ class BalanceService(metaclass=Singleton):
             return False
 
         if auth_page.status_code != 200:
-            self._logger.error(f"Get auth-page with non-success status code: {auth_page.status_code}")
+            self._logger.error(f"Get dao.ad auth-page with non-success status code: {auth_page.status_code}")
             return False
 
         soup = BeautifulSoup(auth_page.text, "lxml")
@@ -363,7 +362,7 @@ class BalanceService(metaclass=Singleton):
         try:
             csrf = str(soup.select("#login-form > input[type=hidden]")[0]).split('value="')[1].split('"')[0]
         except IndexError:
-            self._logger.error("Error occured while trying to get csrf-token from dao.ad login-page.")
+            self._logger.error("Error occurred while trying to get csrf-token from dao.ad login-page.")
             return False
 
         login_response = requests_manager.post(
@@ -436,8 +435,6 @@ class BalanceService(metaclass=Singleton):
         self._networks[network]["last_notification_sending_time"] = datetime.utcnow()
 
     def check_balances(self):
-        sleep_time = 900  # seconds
-
         while True:
             dao_balance = self.get_dao_balance()
 
@@ -465,4 +462,4 @@ class BalanceService(metaclass=Singleton):
             if evadav_balance is not None:
                 self.check_balance("Evadav", evadav_balance)
 
-            time.sleep(sleep_time)
+            time.sleep(self._balances_checking_interval)

@@ -11,6 +11,10 @@ set_env.sh
 run_bot.sh
 tmp.py
 
+# Databases
+*.sqlite3
+*.db
+
 # Distribution / packaging
 .Python
 build/
