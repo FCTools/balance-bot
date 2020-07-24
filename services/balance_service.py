@@ -371,8 +371,8 @@ class BalanceService(metaclass=Singleton):
             data={
                 "_csrf": csrf,
                 "LoginForm[message]": "",
-                "LoginForm[email]": os.getenv("DAO_LOGIN"),
-                "LoginForm[password]": os.getenv("DAO_PASSWORD"),
+                "LoginForm[email]": self._networks["DaoPush"]["login"],
+                "LoginForm[password]": self._networks["DaoPush"]["password"],
                 "LoginForm[anotherPc]": 0,
             },
         )
