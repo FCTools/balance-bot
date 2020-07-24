@@ -26,7 +26,25 @@ class UpdateHandler:
         self._available_networks = ["prop", "eva", "pushhouse", "dao"]
         self._available_notification_levels = ["info", "warning", "critical"]
 
+        self._help_message = self._read_help_message()
+
         self._logger.info("UpdateHandler initialized.")
+
+    @staticmethod
+    def _read_help_message():
+        with open("README.md", "r", encoding="utf-8") as file:
+            return (
+                file.read()
+                .replace("#", "\#")
+                .replace("/", "\/")
+                .replace("-", "\-")
+                .replace(".", "\.")
+                .replace("(", "\(")
+                .replace(")", "\)")
+                .replace("[", "\[")
+                .replace("]", "\]")
+                .replace("_", "\_")
+            )
 
     @staticmethod
     def _network_alias_to_name(alias):
@@ -226,18 +244,4 @@ class UpdateHandler:
         self._sender.send_message(chat_id, "Hello!")
 
     def _help(self, chat_id):
-        help_message_template = (
-            "Hello!\nI support following networks:\n"
-            "1. Propeller Ads (alias: prop)\n"
-            "2. Push.house (alias: pushhouse)\n"
-            "3. DaoPush (alias: dao)\n"
-            "4. Evadav (alias: eva)\n\nI support following commands:\n\n"
-            "1. /start - start message\n"
-            "2. /help - this message\n\n"
-            "3. /get_balance - returns current balance for selected network.\n\n"
-            "<b>Format</b>: /get_balance <i>network_alias</i>\n\n"
-            "   <i>network_alias</i> - optional, can be: prop, pushhouse or eva. "
-            "If empty, returns balances for all networks."
-        )
-
-        self._sender.send_message(chat_id, help_message_template)
+        self._sender.send_message(chat_id, self._help_message, parse_mode="MarkdownV2")

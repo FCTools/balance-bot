@@ -24,13 +24,13 @@ class Sender:
 
         self._logger.info("Sender initialized.")
 
-    def send_message(self, to, text):
+    def send_message(self, to, text, parse_mode="HTML"):
         method = "sendMessage"
 
         response = requests_manager.post(
             requests.Session(),
             self._requests_url + method,
-            params={"chat_id": to, "text": text, "parse_mode": "HTML", "reply_markup": self._basic_keyboard},
+            params={"chat_id": to, "text": text, "parse_mode": parse_mode, "reply_markup": self._basic_keyboard},
         )
 
         if not isinstance(response, requests.Response):
