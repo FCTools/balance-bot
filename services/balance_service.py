@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from datetime import timedelta
+from random import choice
 from urllib.parse import urlencode
 
 from anticaptchaofficial.recaptchav2proxyless import recaptchaV2Proxyless
@@ -21,12 +22,13 @@ class BalanceService(metaclass=Singleton):
     def __init__(self, telegram_access_token):
         self._sender = Sender(telegram_access_token)
         self._database_cursor = Database()
-        self._user_agent = (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/83.0.4103.116 Safari/537.36"
-        )
 
         self._logger = logging.getLogger("WorkingLoop.BalanceService")
+
+        self._user_agents_list = []
+        self._user_agent = None
+        self._read_user_agents()
+        self._update_user_agent()
 
         self._networks = {
             "PropellerAds": {
@@ -49,9 +51,24 @@ class BalanceService(metaclass=Singleton):
                 "last_notification_sending_time": None,
                 "session": {},
             },
+            "DaoPush": {
+                "login": os.environ.get("DAO_EMAIL"),
+                "password": os.environ.get("DAO_PASSWORD"),
+                "last_notification": None,
+                "last_notification_sending_time": None,
+                "session": {},
+            },
         }
 
         self._logger.info("Balance service initialized.")
+
+    def _read_user_agents(self):
+        with open("user_agents.csv", "r", encoding="utf-8") as user_agents_file:
+            data = user_agents_file.readlines()
+        self._user_agents_list += data
+
+    def _update_user_agent(self):
+        self._user_agent = choice(self._user_agents_list).strip()
 
     def session_is_active(self, network):
         session_lifetime = 3  # hours
@@ -89,6 +106,8 @@ class BalanceService(metaclass=Singleton):
             self.send_status_message(network, balance, notification_level)
 
     def propeller_authorize(self):
+        self._update_user_agent()
+
         login = self._networks["PropellerAds"]["login"]
         password = self._networks["PropellerAds"]["password"]
 
@@ -167,6 +186,8 @@ class BalanceService(metaclass=Singleton):
             )
 
     def pushhouse_authorize(self):
+        self._update_user_agent()
+
         session = requests.Session()
         session.headers.update({"User-Agent": self._user_agent})
 
@@ -312,6 +333,94 @@ class BalanceService(metaclass=Singleton):
                 f"Value: {balance_response_json}"
             )
 
+    def dao_authorize(self):
+        self._update_user_agent()
+        session = requests.Session()
+
+        main_page = requests_manager.get(session, "https://dao.ad/", headers={"user-agent": self._user_agent})
+
+        if not isinstance(main_page, requests.Response):
+            self._logger.error(f"Error occurred while trying to get dao.ad main page: {main_page}")
+            return False
+
+        auth_page = requests_manager.get(
+            session,
+            "https://dao.ad/en/manage/main/login",
+            headers={"user-agent": self._user_agent, "referer": "https://dao.ad/"},
+            cookies=main_page.cookies,
+        )
+
+        if not isinstance(auth_page, requests.Response):
+            self._logger.error(f"Error occurred while trying to get dao.ad login-page: {auth_page}")
+            return False
+
+        if auth_page.status_code != 200:
+            self._logger.error(f"Get auth-page with non-success status code: {auth_page.status_code}")
+            return False
+
+        soup = BeautifulSoup(auth_page.text, "lxml")
+
+        try:
+            csrf = str(soup.select("#login-form > input[type=hidden]")[0]).split('value="')[1].split('"')[0]
+        except IndexError:
+            self._logger.error("Error occured while trying to get csrf-token from dao.ad login-page.")
+            return False
+
+        login_response = requests_manager.post(
+            session,
+            "https://dao.ad/en/manage/main/login",
+            data={
+                "_csrf": csrf,
+                "LoginForm[message]": "",
+                "LoginForm[email]": os.getenv("DAO_LOGIN"),
+                "LoginForm[password]": os.getenv("DAO_PASSWORD"),
+                "LoginForm[anotherPc]": 0,
+            },
+        )
+
+        if not isinstance(login_response, requests.Response):
+            self._logger.error(f"Error occurred while trying to authorize on dao.ad: {login_response}")
+            return False
+
+        self._networks["DaoPush"]["session"] = {"instance": session, "creation_time": datetime.utcnow()}
+        return True
+
+    def get_dao_balance(self):
+        if not self.session_is_active("DaoPush"):
+            if not self.dao_authorize():
+                return
+
+        statistics_page = requests_manager.get(
+            self._networks["DaoPush"]["session"]["instance"], "https://dao.ad/manage/statistic"
+        )
+
+        if not isinstance(statistics_page, requests.Response):
+            self._logger.error(f"Error occurred while trying to get dao.ad statistics page: {statistics_page}")
+            return
+        elif statistics_page.status_code != 200:
+            self._logger.error(f"Get statistics page with non-success status code: {statistics_page.status_code}")
+            return
+
+        soup = BeautifulSoup(statistics_page.text, "lxml")
+        try:
+            balance = float(
+                str(
+                    soup.select(
+                        "#topnav > div.topbar-main > div > div.menu-extras > div.top-nav.pull-right.hidden-xs > ul > "
+                        "li:nth-child(2) > a"
+                    )[0]
+                )
+                .split(":")[1]
+                .split("$")[0]
+                .strip()
+                .replace(",", ".")
+            )
+        except IndexError:
+            self._logger.error("Can't get balance from dao.ad statistics page.")
+            return
+
+        return balance
+
     def send_status_message(self, network, balance, level):
         message = f"<b>{level.upper()}</b>: {network} balance is {balance}$"
         success, users_list = self._database_cursor.get_users()
@@ -330,6 +439,11 @@ class BalanceService(metaclass=Singleton):
         sleep_time = 900  # seconds
 
         while True:
+            dao_balance = self.get_dao_balance()
+
+            if dao_balance is not None:
+                self.check_balance("DaoPush", dao_balance)
+
             propeller_balance = self.get_propeller_balance()
 
             if propeller_balance is not None:
