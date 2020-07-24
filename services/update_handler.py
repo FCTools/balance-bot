@@ -22,7 +22,7 @@ class UpdateHandler:
             "/help",
         ]
 
-        self._available_networks = ["prop", "eva", "pushhouse"]
+        self._available_networks = ["prop", "eva", "pushhouse", "dao"]
         self._available_notification_levels = ["info", "warning", "critical"]
 
         self._logger.info("UpdateHandler initialized.")
@@ -35,6 +35,8 @@ class UpdateHandler:
             return "Evadav"
         elif alias == "pushhouse":
             return "Push.house"
+        elif alias == "dao":
+            return "DaoPush"
 
         return "Unknown"
 
@@ -185,6 +187,9 @@ class UpdateHandler:
         elif network_alias == "pushhouse":
             network_name = "Push.house"
             balance = self._balance_service.get_pushhouse_balance()
+        elif network_alias == "dao":
+            network_name = "DaoPush"
+            balance = self._balance_service.get_dao_balance()
         else:
             for network in self._available_networks:
                 self._get_balance(chat_id, network)
@@ -203,7 +208,8 @@ class UpdateHandler:
             "Hello!\nI support following networks:\n"
             "1. Propeller Ads (alias: prop)\n"
             "2. Push.house (alias: pushhouse)\n"
-            "3. Evadav (alias: eva)\n\nI support following commands:\n\n"
+            "3. DaoPush (alias: dao)\n"
+            "4. Evadav (alias: eva)\n\nI support following commands:\n\n"
             "1. /start - start message\n"
             "2. /help - this message\n\n"
             "3. /get_balance - returns current balance for selected network.\n\n"
