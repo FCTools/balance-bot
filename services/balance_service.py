@@ -75,10 +75,10 @@ class BalanceService(metaclass=Singleton):
     def _read_user_agents(self):
         with open("user_agents.csv", "r", encoding="utf-8") as user_agents_file:
             data = user_agents_file.readlines()
-        self._user_agents_list += data
+        self._user_agents_list += [user_agent.strip() for user_agent in data]
 
     def _update_user_agent(self):
-        self._user_agent = choice(self._user_agents_list).strip()
+        self._user_agent = choice(self._user_agents_list)
 
     def session_is_active(self, network):
         return self._networks[network]["session"] and datetime.utcnow() - self._networks[network]["session"][
@@ -192,9 +192,12 @@ class BalanceService(metaclass=Singleton):
         self._update_user_agent()
 
         session = requests.Session()
-        session.headers.update({"User-Agent": self._user_agent})
 
-        auth_page = requests_manager.get(session, "https://push.house/auth/login")
+        auth_page = requests_manager.get(
+            session,
+            "https://push.house/auth/login",
+            headers={"User-Agent": self._user_agent,
+                     "Referer": "https://www.google.com/"})
 
         if not isinstance(auth_page, requests.Response):
             self._logger.error(f"Error occurred while trying to get login page for pushhouse: {auth_page}")
@@ -215,9 +218,9 @@ class BalanceService(metaclass=Singleton):
         solver.set_website_url("https://push.house/auth/login")
         solver.set_website_key(data_sitekey)
 
-        g_response = solver.solve_and_return_solution()
+        g_recaptcha_response = solver.solve_and_return_solution()
 
-        if g_response == 0:
+        if g_recaptcha_response == 0:
             self._logger.error("Captcha solving error.")
             return False
 
@@ -225,7 +228,7 @@ class BalanceService(metaclass=Singleton):
             "email": self._networks["Push.house"]["email"],
             "pass": self._networks["Push.house"]["password"],
             "formsended": 1,
-            "g-recaptcha-response": g_response,
+            "g-recaptcha-response": g_recaptcha_response,
         }
 
         auth_response = requests_manager.post(
@@ -251,6 +254,7 @@ class BalanceService(metaclass=Singleton):
                 "Sec-Fetch-User": "?1",
                 "Upgrade-Insecure-Requests": "1",
             },
+            cookies=auth_page.cookies
         )
 
         if not isinstance(auth_response, requests.Response):
@@ -340,11 +344,17 @@ class BalanceService(metaclass=Singleton):
         self._update_user_agent()
         session = requests.Session()
 
-        main_page = requests_manager.get(session, "https://dao.ad/", headers={"user-agent": self._user_agent})
+        main_page = requests_manager.get(
+            session,
+            "https://dao.ad/",
+            headers={"user-agent": self._user_agent,
+                     "referer": "https://www.google.com/"})
 
         if not isinstance(main_page, requests.Response):
             self._logger.error(f"Error occurred while trying to get dao.ad main page: {main_page}")
             return False
+
+        time.sleep(5)
 
         auth_page = requests_manager.get(
             session,
@@ -368,6 +378,8 @@ class BalanceService(metaclass=Singleton):
         except IndexError:
             self._logger.error("Error occurred while trying to get csrf-token from dao.ad login-page.")
             return False
+
+        time.sleep(5)
 
         login_response = requests_manager.post(
             session,
