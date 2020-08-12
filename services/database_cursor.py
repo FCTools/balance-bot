@@ -12,6 +12,10 @@ from services.singleton import Singleton
 
 
 def catch_database_error(method):
+    """
+    Catch sqlite3 errors.
+    """
+
     def wrapper(*args, **kwargs):
         try:
             return method(*args, **kwargs)
@@ -28,6 +32,10 @@ def catch_database_error(method):
 
 
 class Database(metaclass=Singleton):
+    """
+    Singleton database client.
+    """
+
     def __init__(self):
         self._logger = logging.getLogger("WorkingLoop.Database")
         self._database_name = "info.sqlite3"
@@ -50,6 +58,13 @@ class Database(metaclass=Singleton):
 
     @catch_database_error
     def _create_database(self):
+        """
+        Create database and all required tables.
+
+        :return: status (True if success, else False) and message
+        :rtype: Tuple[Union[bool, str]]
+        """
+
         connection = sqlite3.connect(self._database_name)
         cursor = connection.cursor()
 
@@ -62,6 +77,13 @@ class Database(metaclass=Singleton):
 
     @catch_database_error
     def get_users(self):
+        """
+        Select all users from database.
+
+        :return: status (True if success, else False) and users list
+        :rtype: Tuple[Union[bool, List[Dict[str, Union[int, str]]]]]
+        """
+
         with sqlite3.connect(self._database_name) as connection:
             users_query = connection.execute("SELECT * from users")
 
@@ -74,6 +96,16 @@ class Database(metaclass=Singleton):
 
     @catch_database_error
     def get_notification_levels(self, network):
+        """
+        Select notification levels from database for given network.
+
+        :param network: network
+        :type network: str
+
+        :return: status (True if success, else False) and notification levels list
+        :rtype: Tuple[Union[bool, List[Dict[str, float]]]]
+        """
+
         with self._lock:
             with sqlite3.connect(self._database_name) as connection:
                 notification_levels_query = connection.execute(f"SELECT * from networks WHERE name='{network}'")

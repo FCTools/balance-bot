@@ -175,8 +175,8 @@ class BalanceService(metaclass=Singleton):
         """
 
         balance_response = requests_manager.get(
-            self._networks["PropellerAds"]["session"]["instance"],
-            "https://partners.propellerads.com/v1.0/advertiser/dashboard/",
+            requests.Session(),
+            "https://ssp-api.propellerads.com/v5/adv/balance",
             headers={"Authorization": f"Bearer {self._networks['PropellerAds']['access_token']}"},
         )
 
@@ -185,20 +185,13 @@ class BalanceService(metaclass=Singleton):
             return
 
         try:
-            balance_json = balance_response.json()
+            return float(balance_response.json())
         except json.JSONDecodeError as decode_error:
             self._logger.error(
                 f"Decode error occurred while trying to parse balance response for propeller, doc:"
                 f"{decode_error.doc}"
             )
             return
-
-        try:
-            return balance_json["result"]["balance"]
-        except KeyError:
-            self._logger.error(
-                f"KeyError while trying to get balance from balance response for propeller. JSON data: {balance_json}"
-            )
 
     def pushhouse_authorize(self):
         """
