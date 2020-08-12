@@ -59,7 +59,6 @@ class WorkingLoop:
         required_env_variables_list = [
             "TELEGRAM_ACCESS_TOKEN",
             "PROPELLER_ACCESS_TOKEN",
-            "PROPELLER_FINGERPRINT",
             "EVADAV_ACCESS_TOKEN",
             "PUSHHOUSE_EMAIL",
             "PUSHHOUSE_PASSWORD",
