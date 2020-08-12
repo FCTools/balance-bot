@@ -58,8 +58,7 @@ class WorkingLoop:
         required_files_list = ["user_agents.csv"]
         required_env_variables_list = [
             "TELEGRAM_ACCESS_TOKEN",
-            "PROPELLER_LOGIN",
-            "PROPELLER_PASSWORD",
+            "PROPELLER_ACCESS_TOKEN",
             "PROPELLER_FINGERPRINT",
             "EVADAV_ACCESS_TOKEN",
             "PUSHHOUSE_EMAIL",
