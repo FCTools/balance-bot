@@ -44,8 +44,6 @@ class BalanceService(metaclass=Singleton):
             "PropellerAds": {
                 "last_notification": None,
                 "last_notification_sending_time": None,
-                "session": {"instance": requests.Session(),
-                "creation_time": datetime.utcnow()},
                 "access_token": os.getenv("PROPELLER_ACCESS_TOKEN"),
             },
             "Evadav": {
