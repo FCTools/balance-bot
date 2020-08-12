@@ -219,6 +219,11 @@ class UpdateHandler:
         elif network_alias == "pushhouse":
             network_name = "Push.house"
             balance = self._balance_service.get_pushhouse_balance()
+
+            if balance == "Now authorizing.":
+                self._sender.send_message(chat_id, f"Trying to authorize on Push.house. Please, try again later.")
+                return
+
         elif network_alias == "dao":
             network_name = "DaoPush"
             balance = self._balance_service.get_dao_balance()

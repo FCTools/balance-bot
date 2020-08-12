@@ -57,6 +57,7 @@ class BalanceService(metaclass=Singleton):
                 "last_notification": None,
                 "last_notification_sending_time": None,
                 "session": {},
+                "now_authorizing": False,
             },
             "DaoPush": {
                 "login": os.getenv("DAO_EMAIL"),
@@ -117,7 +118,7 @@ class BalanceService(metaclass=Singleton):
         ):
             self.send_status_message(network, balance, notification_level)
 
-    def get_propeller_balance_with_token(self):
+    def get_propeller_balance(self):
         balance_response = requests_manager.get(
             self._networks["PropellerAds"]["session"]["instance"],
             "https://partners.propellerads.com/v1.0/advertiser/dashboard/",
@@ -130,7 +131,6 @@ class BalanceService(metaclass=Singleton):
 
         try:
             balance_json = balance_response.json()
-            print(balance_json)
         except json.JSONDecodeError as decode_error:
             self._logger.error(
                 f"Decode error occurred while trying to parse balance response for propeller, doc:"
@@ -146,6 +146,10 @@ class BalanceService(metaclass=Singleton):
             )
 
     def pushhouse_authorize(self):
+        if self._networks["Push.house"]["now_authorizing"]:
+            return "Now authorizing."
+
+        self._networks["Push.house"]["now_authorizing"] = True
         self._update_user_agent()
 
         session = requests.Session()
@@ -224,12 +228,16 @@ class BalanceService(metaclass=Singleton):
             return False
 
         self._networks["Push.house"]["session"] = {"instance": session, "creation_time": datetime.utcnow()}
+        self._networks["Push.house"]["now_authorizing"] = False
         return True
 
     def get_pushhouse_balance(self):
         if not self.session_is_active(network="Push.house"):
-            if not self.pushhouse_authorize():
+            authorization_status = self.pushhouse_authorize()
+            if not authorization_status:
                 return
+            elif authorization_status == "Now authorizing.":
+                return authorization_status
 
         dashboard_response = requests_manager.get(
             self._networks["Push.house"]["session"]["instance"], "https://push.house/dashboard"
@@ -414,8 +422,7 @@ class BalanceService(metaclass=Singleton):
             if dao_balance is not None:
                 self.check_balance("DaoPush", dao_balance)
 
-            propeller_balance = self.get_propeller_balance_with_token()
-            print(propeller_balance)
+            propeller_balance = self.get_propeller_balance()
 
             if propeller_balance is not None:
                 self.check_balance("PropellerAds", propeller_balance)
