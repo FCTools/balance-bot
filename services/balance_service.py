@@ -6,7 +6,6 @@ Author: German Yakimov
 import json
 import logging
 import os
-from datetime import timedelta
 from random import choice
 from urllib.parse import urlencode
 
@@ -14,7 +13,7 @@ from anticaptchaofficial.recaptchav2proxyless import recaptchaV2Proxyless
 from bs4 import BeautifulSoup
 
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 
 from services.database_cursor import Database

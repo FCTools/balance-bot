@@ -1,5 +1,8 @@
 from services.ts_clients.ts_client import TrafficSourceClient
 from services import requests_manager
+import os
+import requests
+import json
 
 
 class EvadavClient(TrafficSourceClient):

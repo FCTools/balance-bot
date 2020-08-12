@@ -1,5 +1,8 @@
 from services.database_cursor import Database
 import logging
+import os
+from random import choice
+from datetime import timedelta
 
 
 class TrafficSourceClient:
@@ -12,6 +15,9 @@ class TrafficSourceClient:
         self._network_fullname = network_fullname
         self._network_alias = network_alias
 
+        self._balances_checking_interval = float(os.getenv("BALANCES_CHECKING_INTERVAL", 900))  # seconds
+        self._notifications_interval = float(os.getenv("NOTIFICATIONS_INTERVAL", 2))  # hours
+
         if interface == "api":
             if "access_token" in kwargs:
                 self._access_token = kwargs["access_token"]
@@ -20,7 +26,9 @@ class TrafficSourceClient:
                                    "api, but can't find access token in kwargs.")
                 exit(-1)
         elif interface == "web":
+            self._session_lifetime = float(os.getenv("SESSION_LIFETIME", 2))  # hours
             self._session = None
+            self._session_ctime = None
 
             if "login" in kwargs:
                 self._login = kwargs["login"]
@@ -35,9 +43,22 @@ class TrafficSourceClient:
                 self._logger.error(f"Interface for network {network_fullname} is "\
                                    "web, but can't find password in kwargs.")
                 exit(-1)
+
+            with open("user_agents.csv", "r", encoding="utf-8") as user_agents_file:
+                data = user_agents_file.readlines()
+            self._user_agents_list += [user_agent.strip() for user_agent in data]
         else:
             self._logger.error(f"Incorrect network interface: {interface}")
             exit(-1)
+
+    def _update_user_agent(self):
+        """
+        Select random user agent from list and save it to self._user_agent.
+
+        :return: None
+        """
+
+        self._user_agent = choice(self._user_agents_list)
 
     def _authorize(self):
         pass
@@ -65,7 +86,7 @@ class TrafficSourceClient:
         """
 
         message = f"<b>{level.upper()}</b>: {self._network} balance is {balance}$"
-        success, users_list = self._database_cursor.get_users()
+        success, users_list = self._database.get_users()
 
         if not success:
             self._logger.error(f"Database error occurred while trying to get users: {users_list}")
@@ -96,7 +117,7 @@ class TrafficSourceClient:
             self._logger.error("Can't get balance.")
             return
 
-        success, notification_levels = self._database_cursor.get_notification_levels(network)
+        success, notification_levels = self._database.get_notification_levels(network)
 
         if not success:
             self._logger.error(f"Can't get notification levels from database: {notification_levels}")
@@ -114,9 +135,9 @@ class TrafficSourceClient:
             return
 
         if (
-            not self._networks[network]["last_notification_sending_time"]
-            or notification_level != self._networks[network]["last_notification"]
-            or datetime.utcnow() - self._networks[network]["last_notification_sending_time"]
+            not self._last_notification_sending_time
+            or notification_level != self._last_notification_level
+            or datetime.utcnow() - self._last_notification_sending_time
             > timedelta(hours=self._notifications_interval)
         ):
             self.send_status_message(balance, notification_level)
