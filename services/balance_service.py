@@ -25,6 +25,11 @@ from services.singleton import Singleton
 
 class BalanceService(metaclass=Singleton):
     def __init__(self, telegram_access_token):
+        """
+        :param telegram_access_token: telegram access token
+        :type telegram_access_token: str
+        """
+
         self._sender = Sender(telegram_access_token)
         self._database_cursor = Database()
 
@@ -37,9 +42,6 @@ class BalanceService(metaclass=Singleton):
 
         self._networks = {
             "PropellerAds": {
-                "login": os.getenv("PROPELLER_LOGIN"),
-                "password": os.getenv("PROPELLER_PASSWORD"),
-                "fingerprint": os.getenv("PROPELLER_FINGERPRINT"),
                 "last_notification": None,
                 "last_notification_sending_time": None,
                 "session": {"instance": requests.Session(),
@@ -76,23 +78,69 @@ class BalanceService(metaclass=Singleton):
         self._logger.info("Balance service initialized.")
 
     def set_notifications_interval(self, chat_id, interval):
+        """
+        Sets given interval between balance notifications.
+
+        :param chat_id: chat id
+        :type chat_id: int
+
+        :param interval: notifications interval to set (in hours)
+        :type interval: float
+
+        :return: None
+        """
+
         self._notifications_interval = interval
         self._sender.send_message(chat_id, "Success.")
 
     def _read_user_agents(self):
+        """
+        Read user agents list from user_agents.csv.
+
+        :return: None
+        """
+
         with open("user_agents.csv", "r", encoding="utf-8") as user_agents_file:
             data = user_agents_file.readlines()
         self._user_agents_list += [user_agent.strip() for user_agent in data]
 
     def _update_user_agent(self):
+        """
+        Selects random user agent from list and save it to self._user_agent.
+
+        :return: None
+        """
+
         self._user_agent = choice(self._user_agents_list)
 
     def session_is_active(self, network):
+        """
+        Checks that session for given network is alive (age less than session lifetime).
+
+        :param network: network alias for session checking
+        :type network: str
+
+        :return: True if alive, else False
+        :rtype: bool
+        """
+
         return self._networks[network]["session"] and datetime.utcnow() - self._networks[network]["session"][
             "creation_time"
         ] < timedelta(hours=self._session_lifetime)
 
     def check_balance(self, network, balance):
+        """
+        Checks given balance and sends notification if necessary.
+
+        :param network: network alias
+        :type network: str
+
+        :param balance: balance
+        :type balance: float
+
+        :return: None
+        """
+
         success, notification_levels = self._database_cursor.get_notification_levels(network)
 
         if not success:
@@ -119,6 +167,13 @@ class BalanceService(metaclass=Singleton):
             self.send_status_message(network, balance, notification_level)
 
     def get_propeller_balance(self):
+        """
+        Gets PropellerAds balance.
+
+        :return: balance or None
+        :rtype: Union[None, float]
+        """
+
         balance_response = requests_manager.get(
             self._networks["PropellerAds"]["session"]["instance"],
             "https://partners.propellerads.com/v1.0/advertiser/dashboard/",
@@ -146,6 +201,13 @@ class BalanceService(metaclass=Singleton):
             )
 
     def pushhouse_authorize(self):
+        """
+        Authorizes on Push.house and updates session.
+
+        :return: True if success, else False
+        :rtype: bool
+        """
+
         if self._networks["Push.house"]["now_authorizing"]:
             return "Now authorizing."
 
@@ -232,6 +294,13 @@ class BalanceService(metaclass=Singleton):
         return True
 
     def get_pushhouse_balance(self):
+        """
+        Gets Push.house balance.
+
+        :return: balance or None
+        :rtype: Union[None, float]
+        """
+
         if not self.session_is_active(network="Push.house"):
             authorization_status = self.pushhouse_authorize()
             if not authorization_status:
@@ -273,11 +342,16 @@ class BalanceService(metaclass=Singleton):
         return balance
 
     def get_evadav_balance(self):
-        method = "account/balance"
+        """
+        Gets Evadav balance.
+
+        :return: balance or None
+        :rtype: Union[None, float]
+        """
 
         balance_response = requests_manager.get(
             requests.Session(),
-            f"https://evadav.com/api/v2.0/{method}",
+            f"https://evadav.com/api/v2.0/account/balance",
             params={"access-token": self._networks["Evadav"]["access_token"]},
             headers={"accept": "application/json"},
         )
@@ -306,6 +380,13 @@ class BalanceService(metaclass=Singleton):
             )
 
     def dao_authorize(self):
+        """
+        Authorizes on DaoPush and updates session.
+
+        :return: status - True if success, else False
+        :rtype: bool
+        """
+
         self._update_user_agent()
         session = requests.Session()
 
@@ -366,6 +447,13 @@ class BalanceService(metaclass=Singleton):
         return True
 
     def get_dao_balance(self):
+        """
+        Gets DaoPush balance.
+
+        :return: balance or None
+        :rtype: Union[None, float]
+        """
+
         if not self.session_is_active("DaoPush"):
             if not self.dao_authorize():
                 return
@@ -402,6 +490,21 @@ class BalanceService(metaclass=Singleton):
         return balance
 
     def send_status_message(self, network, balance, level):
+        """
+        Sends notification about balance.
+
+        :param network: network alias
+        :type network: str
+
+        :param balance: balance
+        :type balance: float
+
+        :param level: notification level
+        :type level: str
+
+        :return: None
+        """
+
         message = f"<b>{level.upper()}</b>: {network} balance is {balance}$"
         success, users_list = self._database_cursor.get_users()
 
@@ -416,6 +519,12 @@ class BalanceService(metaclass=Singleton):
         self._networks[network]["last_notification_sending_time"] = datetime.utcnow()
 
     def check_balances(self):
+        """
+        Checks balances and send notifications in infinite loop.
+
+        :return: None
+        """
+
         while True:
             dao_balance = self.get_dao_balance()
 
