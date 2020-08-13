@@ -43,6 +43,11 @@ class DaoPushCient(TrafficSourceClient):
             self._logger.error(f"Error occurred while trying to get dao.ad main page: {main_page}")
             return False
 
+        if main_page.status_code != 200:
+            self._logger.error(f"Get dao.ad main page with non-success status code: {auth_page.status_code}."
+                               f"Response: {main_page.text}")
+            return False
+
         time.sleep(5)
 
         auth_page = requests_manager.get(
@@ -57,7 +62,8 @@ class DaoPushCient(TrafficSourceClient):
             return False
 
         if auth_page.status_code != 200:
-            self._logger.error(f"Get dao.ad auth-page with non-success status code: {auth_page.status_code}")
+            self._logger.error(f"Get dao.ad auth-page with non-success status code: {auth_page.status_code}."
+                               f"Response: {auth_page.text}")
             return False
 
         soup = BeautifulSoup(auth_page.text, "lxml")
@@ -65,7 +71,7 @@ class DaoPushCient(TrafficSourceClient):
         try:
             csrf = str(soup.select("#login-form > input[type=hidden]")[0]).split('value="')[1].split('"')[0]
         except IndexError:
-            self._logger.error("Error occurred while trying to get csrf-token from dao.ad login-page.")
+            self._logger.error("IndexError occurred while trying to get csrf-token from dao.ad login-page.")
             return False
 
         time.sleep(5)
@@ -86,6 +92,11 @@ class DaoPushCient(TrafficSourceClient):
             self._logger.error(f"Error occurred while trying to authorize on dao.ad: {login_response}")
             return False
 
+        if login_response.status_code != 200:
+            self._logger.error(f"Get dao.ad auth-page with non-success status code: {auth_page.status_code}."
+                               f"Response: {login_response.text}")
+            return False
+
         self._session = session
         self._session_ctime = datetime.utcnow()
         super()._authorize()
@@ -94,7 +105,7 @@ class DaoPushCient(TrafficSourceClient):
 
     def get_balance(self):
         """
-        Gets DaoPush balance.
+        Get DaoPush balance.
 
         :return: balance or None
         :rtype: Union[None, float]
@@ -112,7 +123,8 @@ class DaoPushCient(TrafficSourceClient):
             self._logger.error(f"Error occurred while trying to get dao.ad statistics page: {statistics_page}")
             return
         elif statistics_page.status_code != 200:
-            self._logger.error(f"Get statistics page with non-success status code: {statistics_page.status_code}")
+            self._logger.error(f"Get statistics page with non-success status code: {statistics_page.status_code}."
+                               f"Response: {statistics_page.text}")
             return
 
         soup = BeautifulSoup(statistics_page.text, "lxml")

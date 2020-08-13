@@ -37,7 +37,8 @@ class EvadavClient(TrafficSourceClient):
             self._logger.error(f"Error occurred while trying to get balance from eva: {balance_response}")
             return
         if balance_response.status_code != 200:
-            self._logger.error(f"Can't get eva balance: get response with status code {balance_response.status_code}")
+            self._logger.error(f"Can't get eva balance: get response with status code {balance_response.status_code}."\
+                               f"Response: {balance_response.text}")
             return
 
         try:

@@ -50,12 +50,17 @@ class PropellerClient(TrafficSourceClient):
             self._logger.error(f"Error occurred while trying to get login page for pushhouse: {auth_page}")
             return False
 
+        if auth_page.status_code != 200:
+            self._logger.error(f"Get pushhouse auth-page with non-success status code: {auth_page.status_code}."
+                               f"Response: {auth_page.text}")
+            return False
+
         soup = BeautifulSoup(auth_page.text, "lxml")
 
         try:
             data_sitekey = str(soup.select("#mainBlock > div > form > div:nth-child(4) > div")[0]).split('"')[3]
         except IndexError:
-            self._logger.error("Can't parse data-sitekey from auth page html-code.")
+            self._logger.error("Can't get data-sitekey (captcha key) from pushhouse auth page.")
             return False
 
         solver = recaptchaV2Proxyless()
@@ -97,7 +102,8 @@ class PropellerClient(TrafficSourceClient):
             return False
         if auth_response.status_code != 200:
             self._logger.error(
-                f"Can't authorize on pushhouse: get auth-response with status code {auth_response.status_code}"
+                f"Can't authorize on pushhouse: get auth-response with status code {auth_response.status_code}."
+                f"Response: {auth_response.text}"
             )
             return False
 
@@ -132,7 +138,8 @@ class PropellerClient(TrafficSourceClient):
             return
         if dashboard_response.status_code != 200:
             self._logger.error(
-                f"Can't get pushhouse balance: get dashboard response with status code {dashboard_response.status_code}"
+                f"Can't get pushhouse balance: get dashboard response with status code {dashboard_response.status_code}."
+                f"Response: {dashboard_response.text}"
             )
             return
 

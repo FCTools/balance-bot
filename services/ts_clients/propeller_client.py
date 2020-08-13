@@ -37,6 +37,11 @@ class PropellerClient(TrafficSourceClient):
             self._logger.error(f"Error occurred while trying to get propeller balance: {balance_response}")
             return
 
+        if balance_response.status_code != 200:
+            self._logger.error(f"Balance response for propeller with non-success status code: {balance_response.status_code}."
+                               f"Response: {balance_response.json()}")
+            return False
+
         try:
             return float(balance_response.json())
         except json.JSONDecodeError as decode_error:
@@ -46,4 +51,4 @@ class PropellerClient(TrafficSourceClient):
             )
             return
         except TypeError:
-            self._logger.error(f"Can't convert balance to float, value: {balance_response.json()}")
+            self._logger.error(f"Can't convert this balance value to float: {balance_response.json()}")
