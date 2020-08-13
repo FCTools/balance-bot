@@ -16,8 +16,7 @@ class TrafficSourceClient:
         self._network_alias = network_alias
         self._interface = interface
 
-        self._balances_checking_interval = float(os.getenv("BALANCES_CHECKING_INTERVAL", 900))  # seconds
-        self._notifications_interval = float(os.getenv("NOTIFICATIONS_INTERVAL", 2))  # hours
+        self.notifications_interval = float(os.getenv("NOTIFICATIONS_INTERVAL", 2))  # hours
 
         if interface == "api":
             if "access_token" in kwargs:
@@ -147,6 +146,6 @@ class TrafficSourceClient:
             not self._last_notification_sending_time
             or notification_level != self._last_notification_level
             or datetime.utcnow() - self._last_notification_sending_time
-            > timedelta(hours=self._notifications_interval)
+            > timedelta(hours=self.notifications_interval)
         ):
             self.send_status_message(balance, notification_level)
