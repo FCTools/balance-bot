@@ -24,7 +24,8 @@ class PropellerClient(TrafficSourceClient):
         balance_response = requests_manager.get(
             requests.Session(),
             "https://ssp-api.propellerads.com/v5/adv/balance",
-            headers={"Authorization": f"Bearer {self._access_token}"},
+            headers={"Authorization": f"Bearer {self._access_token}",
+                     "Accept": "application/json"},
         )
 
         if not isinstance(balance_response, requests.Response):
@@ -41,5 +42,3 @@ class PropellerClient(TrafficSourceClient):
             return
         except TypeError:
             self._logger.error(f"Can't convert balance to float, value: {balance_response.json()}")
-
-        super().get_balance()

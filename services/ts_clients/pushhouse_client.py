@@ -21,7 +21,7 @@ class PropellerClient(TrafficSourceClient):
 
     def _authorize(self):
         """
-        Authorize on Push.house and updates session.
+        Authorize on Push.house and update session.
 
         :return: True if success, else False
         :rtype: bool
@@ -80,21 +80,9 @@ class PropellerClient(TrafficSourceClient):
             headers={
                 "UserAgent": self._user_agent,
                 "Referer": "https://push.house/auth/login",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,"
-                "application/signed-exchange;v=b3;q=0.9",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Cache-Control": "max-age=0",
-                "Connection": "keep-alive",
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Host": "push.house",
                 "Origin": "https://push.house",
-                "Content-Length": urlencode(auth_data),
-                "Sec-Fetch-Dest": "document",
-                "Sec-Fetch-Mode": "navigate",
-                "Sec-Fetch-Site": "same-origin",
-                "Sec-Fetch-User": "?1",
-                "Upgrade-Insecure-Requests": "1",
             },
             cookies=auth_page.cookies
         )
@@ -123,7 +111,7 @@ class PropellerClient(TrafficSourceClient):
         :rtype: Union[None, float]
         """
 
-        if not self.session_is_active():
+        if not self._session_is_active():
             authorization_status = self._authorize()
             if not authorization_status:
                 return
@@ -162,5 +150,3 @@ class PropellerClient(TrafficSourceClient):
             return
 
         return balance
-
-        super().get_balance()

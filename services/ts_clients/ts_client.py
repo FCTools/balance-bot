@@ -14,6 +14,7 @@ class TrafficSourceClient:
         self._database = Database()
         self._network_fullname = network_fullname
         self._network_alias = network_alias
+        self._interface = interface
 
         self._balances_checking_interval = float(os.getenv("BALANCES_CHECKING_INTERVAL", 900))  # seconds
         self._notifications_interval = float(os.getenv("NOTIFICATIONS_INTERVAL", 2))  # hours
@@ -64,7 +65,15 @@ class TrafficSourceClient:
         pass
 
     def _session_is_active(self):
-        pass
+        """
+        Checks that session is alive (age less than session lifetime).
+
+        :return: True if alive, else False
+        :rtype: bool
+        """
+
+        if interface == "web":
+            return self._session and datetime.utcnow() - self._session_ctime < timedelta(hours=self._session_lifetime)
 
     def get_balance(self):
         pass
@@ -100,7 +109,7 @@ class TrafficSourceClient:
 
     def check_balance(self):
         """
-        Checks given balance and sends notification if necessary.
+        Check given balance and send notification if necessary.
 
         :param network: network alias
         :type network: str

@@ -24,7 +24,7 @@ class EvadavClient(TrafficSourceClient):
         balance_response = requests_manager.get(
             requests.Session(),
             f"https://evadav.com/api/v2.0/account/balance",
-            params={"access-token": self.access_token,
+            params={"access-token": self._access_token,
             headers={"accept": "application/json"},
         )
 
@@ -50,5 +50,3 @@ class EvadavClient(TrafficSourceClient):
                 f"KeyError occurred while trying to get eva balance from balance_response_json. "
                 f"Value: {balance_response_json}"
             )
-
-        super().get_balance()
