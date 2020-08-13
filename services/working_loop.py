@@ -16,6 +16,10 @@ from services.updater import Updater
 
 
 class WorkingLoop:
+    """
+    Bot working loop.
+    """
+
     def __init__(self):
         self._logger = logging.getLogger("WorkingLoop")
         self._configure_logger()
@@ -37,9 +41,13 @@ class WorkingLoop:
         self._lock = threading.Lock()
         self._updates_queue = Queue()
 
-        self._logger.info("WorkingLoop initialized.")
+        self._logger.info("WorkingLoop was successfully initialized.")
 
     def _configure_logger(self):
+        """
+        Set logger basic configuration.
+        """
+
         self._logger.setLevel(logging.DEBUG)
 
         file_handler = logging.FileHandler("log.log", "w", "utf-8")
@@ -57,6 +65,13 @@ class WorkingLoop:
         self._logger.info("Logger configured.")
 
     def _environment_is_correct(self):
+        """
+        Check that working environment is correct: all required environment variables and files exist.
+
+        :return: status (True if all is correct, else False) and errors_list (empty if all is correct)
+        :rtype: Tuple[Union[bool, list]]
+        """
+
         correct = True
         errors = []
 
@@ -85,6 +100,10 @@ class WorkingLoop:
         return correct, errors
 
     def _listen_for_updates(self):
+        """
+        Method for infinite updates listening - target method for main thread.
+        """
+
         offset = None
 
         while True:
@@ -97,18 +116,27 @@ class WorkingLoop:
                 offset = update["update_id"] + 1
 
     def _handle_updates(self):
+        """
+        Method for infinite updates handling - target method for HandlingThread.
+        """
+
         while True:
             if not self._updates_queue.empty():
                 with self._lock:
                     update = self._updates_queue.get()
                     print(update)
             else:
-                time.sleep(3)
+                time.sleep(2)
                 continue
 
             self._update_handler.handle_command(update)
 
     def start(self):
+        """
+        Program ENTRY POINT is here. Create threads for updates handling and balances checking and start them.
+        After that, listen for updates.
+        """
+
         self._logger.info("WorkingLoop started.")
 
         handling_thread = threading.Thread(target=self._handle_updates, daemon=True, name="HandlingThread")
