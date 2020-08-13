@@ -117,6 +117,22 @@ class Database(metaclass=Singleton):
 
     @catch_database_error
     def set_notification_level_balance(self, network, level, balance):
+        """
+        Set border for some notification level.
+
+        :param network: network alias
+        :type network: str
+
+        :param level: notification level
+        :type level: str
+
+        :param balance: border
+        :type balance: float
+
+        :return: status (True if success, else False) and message
+        :rtype: Tuple[Union[bool, str]]
+        """
+
         with self._lock:
             with sqlite3.connect(self._database_name) as connection:
                 connection.execute(f"UPDATE networks SET {level}_level={balance} WHERE name='{network}'")
