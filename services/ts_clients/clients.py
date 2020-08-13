@@ -1,3 +1,8 @@
+"""
+Copyright © 2020 FC Tools. All rights reserved.
+Author: German Yakimov
+"""
+
 from services.ts_clients.daopush_client import DaoPushClient
 from services.ts_clients.evadav_client import EvadavClient
 from services.ts_clients.propeller_client import PropellerClient

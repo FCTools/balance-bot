@@ -1,7 +1,16 @@
+"""
+Copyright © 2020 FC Tools. All rights reserved.
+Author: German Yakimov
+"""
+
 from services.ts_clients.clients import *
+import logging
+
 
 class BalanceService:
     def __init__(self):
+        self._logger = logging.getLogger("WorkingLoop.BalanceService")
+
         self._clients = [
             DaoPushClient(),
             EvadavClient(),
@@ -10,6 +19,8 @@ class BalanceService:
         ]
 
         self._balances_checking_interval = float(os.getenv("BALANCES_CHECKING_INTERVAL", 900))  # seconds
+
+        self._logger.info("Balance service was successfully initialized.")
 
     def set_notifications_interval(self, chat_id, interval):
         """
@@ -28,6 +39,7 @@ class BalanceService:
             client.notifications_interval = interval
 
         self._sender.send_message(chat_id, "Success.")
+        self._logger.info(f"Change notifications interval to {interval}")
 
     def check_balances(self):
         """

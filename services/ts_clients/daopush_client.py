@@ -1,3 +1,8 @@
+"""
+Copyright © 2020 FC Tools. All rights reserved.
+Author: German Yakimov
+"""
+
 from services.ts_clients.ts_client import TrafficSourceClient
 from services import requests_manager
 import requests
