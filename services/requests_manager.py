@@ -11,7 +11,7 @@ def catch_network_errors(method):
     Decorator for network erros catching.
     """
 
-    def wrapper(*args, **kwargs):
+    def inner(*args, **kwargs):
         try:
             return method(*args, **kwargs)
         except (
@@ -24,7 +24,7 @@ def catch_network_errors(method):
         ) as network_error:
             return network_error
 
-    return wrapper
+    return inner
 
 
 @catch_network_errors

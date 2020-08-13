@@ -11,13 +11,27 @@ from services import requests_manager
 
 
 def _button(text):
+    """
+    Create button-object with given text.
+
+    :param text: text
+    :type text: str
+
+    :return: button-object
+    :rtype: Dict[str, str]
+    """
+
     return {"text": text}
 
 
 class Sender:
+    """
+    Service for messages sending.
+    """
+
     def __init__(self, telegram_access_token):
         self._logger = logging.getLogger("WorkingLoop.Sender")
-        
+
         self._requests_url = f"https://api.telegram.org/bot{telegram_access_token}/"
         self._basic_keyboard = json.dumps(
             {
@@ -34,6 +48,21 @@ class Sender:
         self._logger.info("Sender initialized.")
 
     def send_message(self, to, text, parse_mode="HTML"):
+        """
+        Send message with given text to given user.
+
+        :param to: message receiver chat id
+        :type to: int
+
+        :param text: message text
+        :type text: str
+
+        :param parse_mode: parse mode for telegram formatting
+        :type parse_mode: str
+
+        :return: None
+        """
+
         method = "sendMessage"
 
         response = requests_manager.post(
