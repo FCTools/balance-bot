@@ -10,22 +10,26 @@ import requests
 from services import requests_manager
 
 
+def _button(text):
+    return {"text": text}
+
+
 class Sender:
     def __init__(self, telegram_access_token):
+        self._logger = logging.getLogger("WorkingLoop.Sender")
+        
         self._requests_url = f"https://api.telegram.org/bot{telegram_access_token}/"
         self._basic_keyboard = json.dumps(
             {
                 "keyboard": [
-                    [{"text": "/get_balance"}],
-                    [{"text": "/get_balance prop"}, {"text": "/get_balance eva"}],
-                    [{"text": "/get_balance pushhouse"}, {"text": "/get_balance dao"}],
-                    [{"text": "/help"}],
+                    [_button("/get_balance")],
+                    [_button("/get_balance prop"), _button("/get_balance eva")],
+                    [_button("/get_balance pushhouse"), _button("/get_balance dao")],
+                    [_button("/help")],
                 ],
                 "resize_keyboard": True,
             }
         )
-
-        self._logger = logging.getLogger("WorkingLoop.Sender")
 
         self._logger.info("Sender initialized.")
 

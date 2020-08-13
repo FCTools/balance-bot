@@ -11,12 +11,16 @@ from services.sender import Sender
 
 
 class UpdateHandler:
+    """
+    Class for telegram updates handling.
+    """
+
     def __init__(self, telegram_access_token):
+        self._logger = logging.getLogger("WorkingLoop.UpdateHandler")
+
         self._sender = Sender(telegram_access_token)
         self._database = Database()
         self._balance_service = BalanceService(telegram_access_token)
-
-        self._logger = logging.getLogger("WorkingLoop.UpdateHandler")
 
         self._available_commands = [
             "/set_info_balance",
@@ -30,13 +34,19 @@ class UpdateHandler:
 
         self._available_networks = ["prop", "eva", "pushhouse", "dao"]
         self._available_notification_levels = ["info", "warning", "critical"]
-
         self._help_message = self._read_help_message()
 
-        self._logger.info("UpdateHandler initialized.")
+        self._logger.info("UpdateHandler was successfully initialized.")
 
     @staticmethod
     def _read_help_message():
+        """
+        Read help-message from README and format in according to telegram formatting options.
+
+        :return: formatted message
+        :rtype: str
+        """
+
         with open("README.md", "r", encoding="utf-8") as file:
             return (
                 file.read()
@@ -53,6 +63,16 @@ class UpdateHandler:
 
     @staticmethod
     def _network_alias_to_name(alias):
+        """
+        Convert network alias to network fullname.
+
+        :param alias: network alias to convert
+        :type alias: str
+
+        :return: network fullname
+        :rtype: str
+        """
+
         if alias == "prop":
             return "PropellerAds"
         elif alias == "eva":
@@ -64,21 +84,18 @@ class UpdateHandler:
 
         return "Unknown"
 
-    def is_authorized(self, chat_id):
-        success, users_list = self._database.get_users()
-
-        if not success:
-            self._logger.error(f"Database error occurred while trying to get users: {users_list}")
-            return False
-
-        for user in users_list:
-            if chat_id == user["chat_id"]:
-                return True
-
-        return False
-
     @staticmethod
     def is_command(update):
+        """
+        Return True if given update is bot command, else False.
+
+        :param update: update
+        :type update: dict
+
+        :return: True/False
+        :rtype: bool
+        """
+
         return (
             "message" in update
             and "entities" in update["message"]
@@ -87,10 +104,30 @@ class UpdateHandler:
 
     @staticmethod
     def extract_chat_id(update):
+        """
+        Extract sender chat id from given update.
+
+        :param update: update
+        :type update: dict
+
+        :return: chat id if success, else None
+        :rtype: Union[int, None]
+        """
+
         if "message" in update and "from" in update["message"] and "id" in update["message"]["from"]:
             return update["message"]["from"]["id"]
 
     def command_is_valid(self, update):
+        """
+        Check that given update is valid command.
+
+        :param update: update to check
+        :type update: dict
+
+        :return: True if given update is valid command, else False
+        :rtype: bool
+        """
+
         chat_id = self.extract_chat_id(update)
 
         if not chat_id:
@@ -102,14 +139,23 @@ class UpdateHandler:
             self._sender.send_message(chat_id, "I support only commands. Use /help for details.")
             return False
 
-        if not self.is_authorized(chat_id):
-            self._logger.info(f"Message from unauthorized user: {update}")
+        if not self._database.is_authorized(chat_id):
+            self._logger.warning(f"Message from unauthorized user: {update}")
             self._sender.send_message(chat_id, "Permission denied.")
             return False
 
         return True
 
     def handle_command(self, update):
+        """
+        Handle given telegram update.
+
+        :param update: update to handle
+        :type update: dict
+
+        :return: None
+        """
+
         if not self.command_is_valid(update):
             return
 
@@ -150,6 +196,22 @@ class UpdateHandler:
                 self._sender.send_message(chat_id, f"Invalid number of arguments (expected 1, got {len(args)}).")
 
     def balance_is_valid(self, network, level, balance_to_set):
+        """
+        Check that given border-balance for given network and notification level is valid (can be set without errors).
+
+        :param network: network alias
+        :type network: str
+
+        :param level: notification level
+        :type level: str
+
+        :param balance_to_set: balance to set
+        :type balance_to_set: float
+
+        :return: True if balance is valid, else False
+        :rtype: bool
+        """
+
         network = self._network_alias_to_name(network)
         success, current_levels = self._database.get_notification_levels(network)
 
@@ -179,6 +241,18 @@ class UpdateHandler:
         return True, "OK"
 
     def _set_balance_value(self, chat_id, level, *args):
+        """
+        Set border-balance for given notification level.
+
+        :param chat_id: user chat id
+        :type chat_id: int
+
+        :param level: notification level
+        :type level: str
+
+        :return: None
+        """
+
         if len(args) != 2:
             self._sender.send_message(chat_id, f"Incorrect number of arguments (expected 2, got {len(args)}).")
             return
@@ -206,6 +280,18 @@ class UpdateHandler:
         self._sender.send_message(chat_id, "Success.")
 
     def _get_balance(self, chat_id, network_alias):
+        """
+        Handle /get_balance command.
+
+        :param chat_id: sender chat id
+        :type chat_id: int
+
+        :param network_alias: network alias
+        :type network_alias: str
+
+        :return: None
+        """
+
         if network_alias and network_alias not in self._available_networks:
             self._sender.send_message(chat_id, "Incorrect network. I support only prop, pushhouse and eva.")
             return
@@ -221,7 +307,7 @@ class UpdateHandler:
             balance = self._balance_service.get_pushhouse_balance()
 
             if balance == "Now authorizing.":
-                self._sender.send_message(chat_id, f"Trying to authorize on Push.house. Please, try again later.")
+                self._sender.send_message(chat_id, f"Trying to solve CAPTCHA for Push.house authorization. Please, try again later.")
                 return
 
         elif network_alias == "dao":
@@ -235,23 +321,53 @@ class UpdateHandler:
         if balance:
             self._sender.send_message(chat_id, f"<b>{network_name}</b> balance is {balance}$")
         else:
-            self._sender.send_message(chat_id, "Sorry, something went wrong.")
+            self._sender.send_message(chat_id, "Sorry, something went wrong. Try again later or/and contact developers.")
 
     def _set_notifications_interval(self, chat_id, interval):
+        """
+        Handle /set_notifications_interval command.
+
+        :param chat_id: sender chat id
+        :type chat_id: int
+
+        :param interval: interval to set in hours
+        :type interval: float
+
+        :return: None
+        """
+
         try:
             interval = float(interval)
         except TypeError:
             self._sender.send_message(chat_id, "Incorrect interval (not a number).")
             return
 
-        if not (0.34 <= interval <= 6):
-            self._sender.send_message(chat_id, "Interval must be from 0.34 to 6.")
+        if not (0.34 <= interval <= 24):
+            self._sender.send_message(chat_id, "Interval must be from 0.34 to 24.")
             return
 
         self._balance_service.set_notifications_interval(chat_id, interval)
 
     def _start(self, chat_id):
+        """
+        Send greeting to user.
+
+        :param chat_id: sender chat id
+        :type chat_id: int
+
+        :return: None
+        """
+
         self._sender.send_message(chat_id, "Hello!")
 
     def _help(self, chat_id):
+        """
+        Send help message to user.
+
+        :param chat_id: sender chat_id
+        :type chat_id: int
+
+        :return: None
+        """
+
         self._sender.send_message(chat_id, self._help_message, parse_mode="MarkdownV2")

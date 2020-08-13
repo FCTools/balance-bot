@@ -95,6 +95,27 @@ class Database(metaclass=Singleton):
         return True, users_list
 
     @catch_database_error
+    def is_authorized(self, chat_id):
+        """
+        Check that user with given chat_id exists in database.
+
+        :param chat_id: user chat_id
+        :type chat_id: int
+
+        :return: bool-status and result (True if exists, else False)
+        :rtype: Tuple[bool]
+        """
+
+        with sqlite3.connect(self._database_name) as connection:
+            users_query = connection.execute(f"SELECT * from users WHERE chat_id={chat_id}")
+
+            if len(users_query.fetchall()) > 0:
+                return True, True
+            return True, False
+
+        return True, users_list
+
+    @catch_database_error
     def get_notification_levels(self, network):
         """
         Select notification levels from database for given network.

@@ -4,6 +4,10 @@ Author: German Yakimov
 """
 
 class Singleton(type):
+    """
+    Metaclass for singleton pattern imlementation.
+    """
+
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
