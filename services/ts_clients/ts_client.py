@@ -30,6 +30,7 @@ class TrafficSourceClient:
                 self._logger.error(f"Interface for network {network_fullname} is "\
                                    "api, but can't find access token in kwargs.")
                 exit(-1)
+
         elif interface == "web":
             self._session_lifetime = float(os.getenv("SESSION_LIFETIME", 2))  # hours
             self._session = None
@@ -49,12 +50,14 @@ class TrafficSourceClient:
                                    "web, but can't find password in kwargs.")
                 exit(-1)
 
-            with open("user_agents.csv", "r", encoding="utf-8") as user_agents_file:
-                data = user_agents_file.readlines()
-            self._user_agents_list += [user_agent.strip() for user_agent in data]
+            self._read_user_agents()
         else:
             self._logger.error(f"Incorrect network interface: {interface}")
             exit(-1)
+
+    def _read_user_agents(self):
+        with open("user_agents.csv", "r", encoding="utf-8") as user_agents_file:
+            self._user_agents_list = user_agents_file.read().split("\n")
 
     def _update_user_agent(self):
         """
@@ -154,3 +157,4 @@ class TrafficSourceClient:
             > timedelta(hours=self.notifications_interval)
         ):
             self.send_status_message(balance, notification_level)
+

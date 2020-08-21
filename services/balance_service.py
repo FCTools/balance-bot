@@ -529,7 +529,8 @@ class BalanceService(metaclass=Singleton):
             pushhouse_balance = self.get_pushhouse_balance()
 
             if pushhouse_balance is not None:
-                self.check_balance("Push.house", pushhouse_balance)
+                if pushhouse_balance != "Now authorizing.":
+                    self.check_balance("Push.house", pushhouse_balance)
             else:
                 self._networks["Push.house"]["session"] = None
                 pushhouse_balance = self.get_pushhouse_balance()

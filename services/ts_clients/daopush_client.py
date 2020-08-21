@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 
-class DaoPushCient(TrafficSourceClient):
+class DaoPushClient(TrafficSourceClient):
     def __init__(self):
         super().__init__(
             network_fullname="DaoPush",
