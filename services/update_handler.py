@@ -50,15 +50,15 @@ class UpdateHandler:
         with open("README.md", "r", encoding="utf-8") as file:
             return (
                 file.read()
-                .replace("#", "\#")
-                .replace("/", "\/")
-                .replace("-", "\-")
-                .replace(".", "\.")
-                .replace("(", "\(")
-                .replace(")", "\)")
-                .replace("[", "\[")
-                .replace("]", "\]")
-                .replace("_", "\_")
+                    .replace("#", "\#")
+                    .replace("/", "\/")
+                    .replace("-", "\-")
+                    .replace(".", "\.")
+                    .replace("(", "\(")
+                    .replace(")", "\)")
+                    .replace("[", "\[")
+                    .replace("]", "\]")
+                    .replace("_", "\_")
             )
 
     @staticmethod
@@ -97,9 +97,9 @@ class UpdateHandler:
         """
 
         return (
-            "message" in update
-            and "entities" in update["message"]
-            and update["message"]["entities"][0]["type"] == "bot_command"
+                "message" in update
+                and "entities" in update["message"]
+                and update["message"]["entities"][0]["type"] == "bot_command"
         )
 
     @staticmethod
@@ -296,32 +296,24 @@ class UpdateHandler:
             self._sender.send_message(chat_id, "Incorrect network. I support only prop, pushhouse and eva.")
             return
 
-        if network_alias == "prop":
-            network_name = "PropellerAds"
-            balance = self._balance_service.get_propeller_balance()
-        elif network_alias == "eva":
-            network_name = "Evadav"
-            balance = self._balance_service.get_evadav_balance()
-        elif network_alias == "pushhouse":
-            network_name = "Push.house"
-            balance = self._balance_service.get_pushhouse_balance()
-
-            if balance == "Now authorizing.":
-                self._sender.send_message(chat_id, f"Trying to solve CAPTCHA for Push.house authorization. Please, try again later.")
-                return
-
-        elif network_alias == "dao":
-            network_name = "DaoPush"
-            balance = self._balance_service.get_dao_balance()
-        else:
+        if not network_alias:
             for network in self._available_networks:
                 self._get_balance(chat_id, network)
+            return
+
+        balance = self._balance_service.get_balance(network_alias)
+        network_name = self._network_alias_to_name(network_alias)
+
+        if balance == "Now authorizing.":
+            self._sender.send_message(chat_id,
+                                      f"Trying to solve CAPTCHA for Push.house authorization. Please, try again later.")
             return
 
         if balance:
             self._sender.send_message(chat_id, f"<b>{network_name}</b> balance is {balance}$")
         else:
-            self._sender.send_message(chat_id, "Sorry, something went wrong. Try again later or/and contact developers.")
+            self._sender.send_message(chat_id,
+                                      "Sorry, something went wrong. Try again later or/and contact developers.")
 
     def _set_notifications_interval(self, chat_id, interval):
         """

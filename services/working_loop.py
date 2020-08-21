@@ -64,7 +64,8 @@ class WorkingLoop:
 
         self._logger.info("Logger configured.")
 
-    def _environment_is_correct(self):
+    @staticmethod
+    def _environment_is_correct():
         """
         Check that working environment is correct: all required environment variables and files exist.
 

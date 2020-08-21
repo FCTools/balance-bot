@@ -3,16 +3,19 @@ Copyright © 2020 FC Tools. All rights reserved.
 Author: German Yakimov
 """
 
-from services.ts_clients.ts_client import TrafficSourceClient
-from services import requests_manager
-import os
-import requests
 import json
+import os
+
+import requests
+
+from services import requests_manager
+from services.ts_clients.ts_client import TrafficSourceClient
 
 
 class EvadavClient(TrafficSourceClient):
-    def __init__(self):
+    def __init__(self, telegram_access_token):
         super().__init__(
+            telegram_access_token=telegram_access_token,
             network_fullname="Evadav",
             network_alias="eva",
             interface="api",
@@ -26,18 +29,15 @@ class EvadavClient(TrafficSourceClient):
         :rtype: Union[None, float]
         """
 
-        balance_response = requests_manager.get(
-            requests.Session(),
-            f"https://evadav.com/api/v2.0/account/balance",
-            params={"access-token": self._access_token,
-            headers={"accept": "application/json"},
-        )
+        balance_response = requests_manager.get(requests.Session(), f"https://evadav.com/api/v2.0/account/balance",
+                                                params={"access-token": self._access_token},
+                                                headers={"accept": "application/json"})
 
         if not isinstance(balance_response, requests.Response):
             self._logger.error(f"Error occurred while trying to get balance from eva: {balance_response}")
             return
         if balance_response.status_code != 200:
-            self._logger.error(f"Can't get eva balance: get response with status code {balance_response.status_code}."\
+            self._logger.error(f"Can't get eva balance: get response with status code {balance_response.status_code}." \
                                f"Response: {balance_response.text}")
             return
 

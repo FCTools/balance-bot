@@ -3,16 +3,19 @@ Copyright © 2020 FC Tools. All rights reserved.
 Author: German Yakimov
 """
 
-from services.ts_clients.ts_client import TrafficSourceClient
-from services import requests_manager
-import requests
 import json
 import os
 
+import requests
+
+from services import requests_manager
+from services.ts_clients.ts_client import TrafficSourceClient
+
 
 class PropellerClient(TrafficSourceClient):
-    def __init__(self):
+    def __init__(self, telegram_access_token):
         super().__init__(
+            telegram_access_token=telegram_access_token,
             network_fullname="PropellerAds",
             network_alias="prop",
             interface="api",
@@ -38,8 +41,9 @@ class PropellerClient(TrafficSourceClient):
             return
 
         if balance_response.status_code != 200:
-            self._logger.error(f"Balance response for propeller with non-success status code: {balance_response.status_code}."
-                               f"Response: {balance_response.json()}")
+            self._logger.error(
+                f"Balance response for propeller with non-success status code: {balance_response.status_code}."
+                f"Response: {balance_response.json()}")
             return False
 
         try:

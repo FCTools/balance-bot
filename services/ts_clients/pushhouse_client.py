@@ -3,21 +3,24 @@ Copyright © 2020 FC Tools. All rights reserved.
 Author: German Yakimov
 """
 
-from services.ts_clients.ts_client import TrafficSourceClient
-from services import requests_manager
 import os
+from datetime import datetime
+
 import requests
 from anticaptchaofficial.recaptchav2proxyless import recaptchaV2Proxyless
-from urllib.parse import urlencode
-from datetime import datetime, timedelta
+from bs4 import BeautifulSoup
+
+from services import requests_manager
+from services.ts_clients.ts_client import TrafficSourceClient
 
 
-class PropellerClient(TrafficSourceClient):
-    def __init__(self):
+class PushHouseClient(TrafficSourceClient):
+    def __init__(self, telegram_access_token):
         self._captcha_api_key = os.getenv("CAPTCHA_SERVICE_KEY")
         self._now_authorizing = False
 
         super().__init__(
+            telegram_access_token=telegram_access_token,
             network_fullname="Push.house",
             network_alias="pushhouse",
             interface="web",
@@ -153,9 +156,9 @@ class PropellerClient(TrafficSourceClient):
                         "div.col.flexible > div > div.amountBlock > span"
                     )[0]
                 )
-                .split("$")[1]
-                .split("<")[0]
-                .strip()
+                    .split("$")[1]
+                    .split("<")[0]
+                    .strip()
             )
         except IndexError:
             self._logger.error("Can't get balance from dashboard-page.")

@@ -3,19 +3,21 @@ Copyright © 2020 FC Tools. All rights reserved.
 Author: German Yakimov
 """
 
-from services.ts_clients.ts_client import TrafficSourceClient
-from services import requests_manager
-import requests
-import json
 import os
 import time
-from bs4 import BeautifulSoup
 from datetime import datetime
+
+import requests
+from bs4 import BeautifulSoup
+
+from services import requests_manager
+from services.ts_clients.ts_client import TrafficSourceClient
 
 
 class DaoPushClient(TrafficSourceClient):
-    def __init__(self):
+    def __init__(self, telegram_access_token):
         super().__init__(
+            telegram_access_token=telegram_access_token,
             network_fullname="DaoPush",
             network_alias="dao",
             interface="web",
@@ -44,7 +46,7 @@ class DaoPushClient(TrafficSourceClient):
             return False
 
         if main_page.status_code != 200:
-            self._logger.error(f"Get dao.ad main page with non-success status code: {auth_page.status_code}."
+            self._logger.error(f"Get dao.ad main page with non-success status code: {main_page.status_code}."
                                f"Response: {main_page.text}")
             return False
 
@@ -136,10 +138,10 @@ class DaoPushClient(TrafficSourceClient):
                         "li:nth-child(2) > a"
                     )[0]
                 )
-                .split(":")[1]
-                .split("$")[0]
-                .strip()
-                .replace(",", ".")
+                    .split(":")[1]
+                    .split("$")[0]
+                    .strip()
+                    .replace(",", ".")
             )
         except IndexError:
             self._logger.error("Can't get balance from dao.ad statistics page.")

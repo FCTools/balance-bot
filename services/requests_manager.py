@@ -8,7 +8,7 @@ import requests
 
 def catch_network_errors(method):
     """
-    Decorator for network erros catching.
+    Decorator for network errors catching.
     """
 
     def inner(*args, **kwargs):
@@ -35,7 +35,7 @@ def get(session, *args, **kwargs):
     :param session: session for response making
     :type session: requests.Session
 
-    :return: response if success, else catched error
+    :return: response if success, else catch error
     :rtype: Union[requests.Response, Exception]
     """
 
@@ -50,7 +50,7 @@ def post(session, *args, **kwargs):
     :param session: session for response making
     :type session: requests.Session
 
-    :return: response if success, else catched error
+    :return: response if success, else catch error
     :rtype: Union[requests.Response, Exception]
     """
 

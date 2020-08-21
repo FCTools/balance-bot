@@ -3,23 +3,26 @@ Copyright © 2020 FC Tools. All rights reserved.
 Author: German Yakimov
 """
 
-from services.database_cursor import Database
 import logging
 import os
+from datetime import timedelta, datetime
 from random import choice
-from datetime import timedelta
+
+from services.database_cursor import Database
+from services.sender import Sender
 
 
 class TrafficSourceClient:
-    def __init__(self, network_fullname, network_alias, interface, **kwargs):
+    def __init__(self, telegram_access_token, network_fullname, network_alias, interface, **kwargs):
         self._logger = logging.getLogger(f"WorkingLoop.BalanceService.{network_fullname}Client")
+        self._sender = Sender(telegram_access_token)
 
         self._last_notification_level = None
-        self._last_notificaton_sending_time = None
+        self._last_notification_sending_time = None
         self._database = Database()
-        self._network_fullname = network_fullname
-        self._network_alias = network_alias
-        self._interface = interface
+        self.network_fullname = network_fullname
+        self.network_alias = network_alias
+        self.interface = interface
 
         self.notifications_interval = float(os.getenv("NOTIFICATIONS_INTERVAL", 2))  # hours
 
@@ -27,7 +30,7 @@ class TrafficSourceClient:
             if "access_token" in kwargs:
                 self._access_token = kwargs["access_token"]
             else:
-                self._logger.error(f"Interface for network {network_fullname} is "\
+                self._logger.error(f"Interface for network {network_fullname} is "
                                    "api, but can't find access token in kwargs.")
                 exit(-1)
 
@@ -39,14 +42,14 @@ class TrafficSourceClient:
             if "login" in kwargs:
                 self._login = kwargs["login"]
             else:
-                self._logger.error(f"Interface for network {network_fullname} is "\
+                self._logger.error(f"Interface for network {network_fullname} is "
                                    "web, but can't find login in kwargs.")
                 exit(-1)
 
             if "password" in kwargs:
                 self._password = kwargs["password"]
             else:
-                self._logger.error(f"Interface for network {network_fullname} is "\
+                self._logger.error(f"Interface for network {network_fullname} is "
                                    "web, but can't find password in kwargs.")
                 exit(-1)
 
@@ -79,7 +82,7 @@ class TrafficSourceClient:
         :rtype: bool
         """
 
-        if interface == "web":
+        if self.interface == "web":
             return self._session and datetime.utcnow() - self._session_ctime < timedelta(hours=self._session_lifetime)
 
     def get_balance(self):
@@ -88,9 +91,6 @@ class TrafficSourceClient:
     def send_status_message(self, balance, level):
         """
         Sends notification about balance.
-
-        :param network: network alias
-        :type network: str
 
         :param balance: balance
         :type balance: float
@@ -101,7 +101,7 @@ class TrafficSourceClient:
         :return: None
         """
 
-        message = f"<b>{level.upper()}</b>: {self._network} balance is {balance}$"
+        message = f"<b>{level.upper()}</b>: {self.network_fullname} balance is {balance}$"
         success, users_list = self._database.get_users()
 
         if not success:
@@ -116,13 +116,7 @@ class TrafficSourceClient:
 
     def check_balance(self):
         """
-        Check given balance and send notification if necessary.
-
-        :param network: network alias
-        :type network: str
-
-        :param balance: balance
-        :type balance: float
+        Check balance and send notification if necessary.
 
         :return: None
         """
@@ -133,7 +127,10 @@ class TrafficSourceClient:
             self._logger.error("Can't get balance.")
             return
 
-        success, notification_levels = self._database.get_notification_levels(network)
+        if isinstance(balance, str):
+            return
+
+        success, notification_levels = self._database.get_notification_levels(self.network_fullname)
 
         if not success:
             self._logger.error(f"Can't get notification levels from database: {notification_levels}")
@@ -151,10 +148,9 @@ class TrafficSourceClient:
             return
 
         if (
-            not self._last_notification_sending_time
-            or notification_level != self._last_notification_level
-            or datetime.utcnow() - self._last_notification_sending_time
-            > timedelta(hours=self.notifications_interval)
+                not self._last_notification_sending_time
+                or notification_level != self._last_notification_level
+                or datetime.utcnow() - self._last_notification_sending_time
+                > timedelta(hours=self.notifications_interval)
         ):
             self.send_status_message(balance, notification_level)
-
