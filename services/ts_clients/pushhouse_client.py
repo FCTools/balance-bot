@@ -11,12 +11,13 @@ from anticaptchaofficial.recaptchav2proxyless import recaptchaV2Proxyless
 from bs4 import BeautifulSoup
 
 from services import requests_manager
+from services.captcha_solver import CaptchaSolver
 from services.ts_clients.ts_client import TrafficSourceClient
 
 
 class PushHouseClient(TrafficSourceClient):
     def __init__(self, telegram_access_token):
-        self._captcha_api_key = os.getenv("CAPTCHA_SERVICE_KEY")
+        self._captcha_solver = CaptchaSolver()
         self._now_authorizing = False
 
         super().__init__(
@@ -66,17 +67,11 @@ class PushHouseClient(TrafficSourceClient):
             self._logger.error("Can't get data-sitekey (captcha key) from pushhouse auth page.")
             return False
 
-        solver = recaptchaV2Proxyless()
-        # solver.set_verbose(False) - you can do this for disable console logging
-        solver.set_verbose(1)
-        solver.set_key(self._captcha_api_key)
-        solver.set_website_url("https://push.house/auth/login")
-        solver.set_website_key(data_sitekey)
-
-        g_recaptcha_response = solver.solve_and_return_solution()
+        g_recaptcha_response = self._captcha_solver.solve(data_sitekey, "https://push.house/auth/login")
 
         if g_recaptcha_response == 0:
             self._logger.error("Captcha solving error.")
+            self._now_authorizing = False
             return False
 
         auth_data = {
