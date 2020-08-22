@@ -189,7 +189,7 @@ class UpdateHandler:
 
         elif command == "/set_notifications_interval":
             if not args:
-                self._sender.send_message(chat_id, f"Please specify interval in hours (min: 0.34, max: 6).")
+                self._sender.send_message(chat_id, f"Please specify interval in hours (min: 0.34, max: 24).")
             elif len(args) == 1:
                 self._set_notifications_interval(chat_id, args[0])
             else:

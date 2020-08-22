@@ -108,11 +108,14 @@ class TrafficSourceClient:
             self._logger.error(f"Database error occurred while trying to get users: {users_list}")
             return
 
-        for user in users_list:
-            self._sender.send_message(user["chat_id"], message)
+        if not self._last_notification_sending_time or \
+           datetime.utcnow() - self._last_notification_sending_time >= timedelta(hours=self.notifications_interval):
 
-        self._last_notification_level = level
-        self._last_notificaton_sending_time = datetime.utcnow()
+            for user in users_list:
+                self._sender.send_message(user["chat_id"], message)
+
+            self._last_notification_level = level
+            self._last_notification_sending_time = datetime.utcnow()
 
     def check_balance(self):
         """
