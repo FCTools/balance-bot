@@ -32,7 +32,7 @@ class UpdateHandler:
             "/help",
         ]
 
-        self._available_networks = ["prop", "eva", "pushhouse", "dao"]
+        self._available_networks = ["prop", "eva", "pushhouse", "dao", "zero"]
         self._available_notification_levels = ["info", "warning", "critical"]
         self._help_message = self._read_help_message()
 
@@ -81,6 +81,8 @@ class UpdateHandler:
             return "Push.house"
         elif alias == "dao":
             return "DaoPush"
+        elif alias == "zero":
+            return "ZeroPark"
 
         return "Unknown"
 
@@ -261,7 +263,7 @@ class UpdateHandler:
         balance = args[1]
 
         if network not in self._available_networks:
-            self._sender.send_message(chat_id, "Incorrect network. I support only prop, pushhouse and eva.")
+            self._sender.send_message(chat_id, "Incorrect network. I support only prop, pushhouse, eva, dao and zero.")
             return
 
         try:
@@ -293,7 +295,7 @@ class UpdateHandler:
         """
 
         if network_alias and network_alias not in self._available_networks:
-            self._sender.send_message(chat_id, "Incorrect network. I support only prop, pushhouse and eva.")
+            self._sender.send_message(chat_id, "Incorrect network. I support only prop, pushhouse, eva, dao and zero.")
             return
 
         if not network_alias:

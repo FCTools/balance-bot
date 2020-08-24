@@ -20,7 +20,8 @@ class BalanceService(metaclass=Singleton):
             DaoPushClient(telegram_access_token),
             EvadavClient(telegram_access_token),
             PropellerClient(telegram_access_token),
-            PushHouseClient(telegram_access_token)
+            ZeroParkClient(telegram_access_token),
+            PushHouseClient(telegram_access_token),
         ]
 
         self._balances_checking_interval = float(os.getenv("BALANCES_CHECKING_INTERVAL", 900))  # seconds
