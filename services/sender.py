@@ -39,6 +39,7 @@ class Sender:
                     [_button("/get_balance")],
                     [_button("/get_balance prop"), _button("/get_balance eva")],
                     [_button("/get_balance pushhouse"), _button("/get_balance dao")],
+                    [_button("/get_balance zero"), _button("/get_balance mgid")],
                     [_button("/help")],
                 ],
                 "resize_keyboard": True,
