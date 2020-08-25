@@ -21,6 +21,7 @@ class BalanceService(metaclass=Singleton):
             EvadavClient(telegram_access_token),
             PropellerClient(telegram_access_token),
             ZeroParkClient(telegram_access_token),
+            MgidClient(telegram_access_token),
             PushHouseClient(telegram_access_token),
         ]
 

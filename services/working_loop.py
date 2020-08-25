@@ -87,6 +87,8 @@ class WorkingLoop:
             "DAO_PASSWORD",
             "CAPTCHA_SERVICE_KEY",
             "ZEROPARK_ACCESS_TOKEN",
+            "MGID_CLIENT_ID",
+            "MGID_ACCESS_TOKEN",
         ]
 
         for file in required_files_list:

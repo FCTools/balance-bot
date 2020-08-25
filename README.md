@@ -41,5 +41,6 @@ Telegram bot for balances control.
 3. Evadav (alias - eva)
 4. DaoPush (alias - dao)
 5. ZeroPark (alias - zero)
+6. MGID (alias - mgid)
 
 Basically, bot checks balances every 20 minutes. If balance is less than some border (e.g. info-border), bot sends notification every 2 hours to all users from database. Then, if level has changed (e.g. balance moved from warning-zone to critical-zone), bot sends notification to all users immediately.
