@@ -2,8 +2,12 @@
 Copyright © 2020 FC Tools. All rights reserved.
 Author: German Yakimov
 """
+import json
+import logging
 
 import requests
+
+from services import requests_manager
 
 
 class Updater:
@@ -13,6 +17,9 @@ class Updater:
 
     def __init__(self, telegram_access_token):
         self._requests_url = f"https://api.telegram.org/bot{telegram_access_token}/"
+        self._logger = logging.getLogger(__name__)
+
+        self._logger.info("Updater was successfully initialized.")
 
     def get_updates(self, offset=None, timeout=10):
         """
@@ -29,10 +36,26 @@ class Updater:
         """
 
         method = "getUpdates"
+        response = requests_manager.get(requests.Session(), self._requests_url + method,
+                                        params={"offset": offset, "timeout": timeout})
 
-        updates = requests.get(self._requests_url + method, params={"offset": offset, "timeout": timeout}).json()
+        if not isinstance(response, requests.Response):
+            self._logger.error(f"Network error occurred while trying to get updates from telegram: {response}")
+            return []
+        if response.status_code != 200:
+            self._logger.error(
+                f"Get response with non-success status code (while trying to get updates from telegram)."
+                f" Response: {response.text}")
+            return []
 
-        if "result" in updates:
-            return updates["result"]
+        try:
+            response_json = response.json()
+        except json.JSONDecodeError as decode_error:
+            self._logger.error(f"Can't decode response from telegram with updates, doc: {decode_error.doc}")
+            return []
 
-        return []
+        if "result" in response_json:
+            return response_json["result"]
+        else:
+            self._logger.error(f"Get response with incorrect structure (telegram updates): {response_json}")
+            return []
