@@ -2,13 +2,13 @@
 Copyright © 2020 FC Tools. All rights reserved.
 Author: German Yakimov
 """
+import logging
 import os
 import time
 
 from services.sender import Sender
 from services.singleton import Singleton
 from services.ts_clients.clients import *
-import logging
 
 
 class BalanceService(metaclass=Singleton):

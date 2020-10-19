@@ -20,11 +20,11 @@ def catch_database_error(method):
         try:
             return method(*args, **kwargs)
         except (
-            sqlite3.ProgrammingError,
-            sqlite3.OperationalError,
-            sqlite3.DatabaseError,
-            sqlite3.Error,
-            Exception,
+                sqlite3.ProgrammingError,
+                sqlite3.OperationalError,
+                sqlite3.DatabaseError,
+                sqlite3.Error,
+                Exception,
         ) as database_error:
             return False, database_error
 

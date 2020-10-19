@@ -41,7 +41,7 @@ class UpdateHandler:
     @staticmethod
     def _read_help_message():
         """
-        Read help-message from README and format in according to telegram formatting options.
+        Read help-message from README and format it according to telegram formatting options.
 
         :return: formatted message
         :rtype: str

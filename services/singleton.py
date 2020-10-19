@@ -3,9 +3,10 @@ Copyright © 2020 FC Tools. All rights reserved.
 Author: German Yakimov
 """
 
+
 class Singleton(type):
     """
-    Metaclass for singleton pattern imlementation.
+    Metaclass for singleton pattern implementation.
     """
 
     _instances = {}

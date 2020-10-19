@@ -9,7 +9,7 @@ class CaptchaSolver:
 
     def solve(self, data_sitekey, url):
         solver = recaptchaV2Proxyless()
-        # solver.set_verbose(False) - you can do this for disable console logging
+        solver.set_verbose(False)
         solver.set_verbose(1)
         solver.set_key(self._captcha_api_key)
         solver.set_website_url(url)

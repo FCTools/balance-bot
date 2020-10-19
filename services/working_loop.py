@@ -17,7 +17,7 @@ from services.updater import Updater
 
 class WorkingLoop:
     """
-    Bot working loop.
+    Bot main working loop.
     """
 
     def __init__(self):
@@ -137,7 +137,7 @@ class WorkingLoop:
 
     def start(self):
         """
-        Program ENTRY POINT is here. Create threads for updates handling and balances checking and start them.
+        ENTRY POINT is here. Create threads for updates handling and balances checking and start them.
         After that, listen for updates.
         """
 

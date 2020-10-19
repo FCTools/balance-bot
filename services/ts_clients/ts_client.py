@@ -90,7 +90,7 @@ class TrafficSourceClient:
 
     def send_status_message(self, balance, level):
         """
-        Sends notification about balance.
+        Send notification about balance.
 
         :param balance: balance
         :type balance: float
@@ -109,7 +109,8 @@ class TrafficSourceClient:
             return
 
         if not self._last_notification_sending_time or \
-           datetime.utcnow() - self._last_notification_sending_time >= timedelta(hours=self.notifications_interval):
+                datetime.utcnow() - self._last_notification_sending_time >= timedelta(
+            hours=self.notifications_interval):
 
             for user in users_list:
                 self._sender.send_message(user["chat_id"], message)

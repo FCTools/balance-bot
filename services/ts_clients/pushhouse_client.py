@@ -7,7 +7,6 @@ import os
 from datetime import datetime
 
 import requests
-from anticaptchaofficial.recaptchav2proxyless import recaptchaV2Proxyless
 from bs4 import BeautifulSoup
 
 from services import requests_manager

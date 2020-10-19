@@ -15,12 +15,12 @@ def catch_network_errors(method):
         try:
             return method(*args, **kwargs)
         except (
-            requests.exceptions.HTTPError,
-            requests.exceptions.ConnectTimeout,
-            requests.exceptions.Timeout,
-            requests.exceptions.ConnectionError,
-            requests.exceptions.RequestException,
-            Exception,
+                requests.exceptions.HTTPError,
+                requests.exceptions.ConnectTimeout,
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.RequestException,
+                Exception,
         ) as network_error:
             return network_error
 
