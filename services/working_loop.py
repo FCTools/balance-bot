@@ -128,7 +128,6 @@ class WorkingLoop:
             if not self._updates_queue.empty():
                 with self._lock:
                     update = self._updates_queue.get()
-                    print(update)
             else:
                 time.sleep(2)
                 continue
