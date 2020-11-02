@@ -34,7 +34,7 @@ class UpdateHandler:
             "/help",
         ]
 
-        self._available_networks = ["dao", "eva", "prop", "zero", "mgid", "pushhouse", "kadam"]
+        self._available_networks = ["dao", "eva", "prop", "zero", "mgid", "pushhouse"]
         self._available_notification_levels = ["info", "warning", "critical"]
         self._help_message = self._read_help_message()
 
