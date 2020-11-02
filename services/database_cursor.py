@@ -69,7 +69,8 @@ class Database(metaclass=Singleton):
         cursor = connection.cursor()
 
         cursor.execute("CREATE table users (chat_id integer, login text, first_name text, last_name text)")
-        cursor.execute("CREATE table networks (name text, info_level real, warning_level real, critical_level real)")
+        cursor.execute("CREATE table networks (name text, info_level real, warning_level real, critical_level real, "
+                       "status integer)")
 
         connection.commit()
 
@@ -159,3 +160,19 @@ class Database(metaclass=Singleton):
                 connection.execute(f"UPDATE networks SET {level}_level={balance} WHERE name='{network}'")
 
         return True, "OK"
+
+    @catch_database_error
+    def set_network_status(self, status, network):
+        with self._lock:
+            with sqlite3.connect(self._database_name) as connection:
+                connection.execute(f"UPDATE networks SET status={status} WHERE name='{network}'")
+
+        return True, "OK"
+
+    @catch_database_error
+    def get_network_status(self, network):
+        with self._lock:
+            with sqlite3.connect(self._database_name) as connection:
+                status_query = connection.execute(f"SELECT * from networks WHERE name='{network}'")
+
+                return status_query.fetchone()[4]

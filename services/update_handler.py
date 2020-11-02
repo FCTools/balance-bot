@@ -28,11 +28,13 @@ class UpdateHandler:
             "/set_critical_balance",
             "/get_balance",
             "/set_notifications_interval",
+            "/disable",
+            "/enable",
             "/start",
             "/help",
         ]
 
-        self._available_networks = ["dao", "eva", "prop", "zero", "mgid", "pushhouse"]
+        self._available_networks = ["dao", "eva", "prop", "zero", "mgid", "pushhouse", "kadam"]
         self._available_notification_levels = ["info", "warning", "critical"]
         self._help_message = self._read_help_message()
 
@@ -85,6 +87,8 @@ class UpdateHandler:
             return "ZeroPark"
         elif alias == "mgid":
             return "MGID"
+        elif alias == "kadam":
+            return "Kadam"
 
         return "Unknown"
 
@@ -196,6 +200,22 @@ class UpdateHandler:
                 self._sender.send_message(chat_id, f"Please specify interval in hours (min: 0.34, max: 24).")
             elif len(args) == 1:
                 self._set_notifications_interval(chat_id, args[0])
+            else:
+                self._sender.send_message(chat_id, f"Invalid number of arguments (expected 1, got {len(args)}).")
+
+        elif command == '/disable':
+            if not args:
+                self._sender.send_message(chat_id, f"Please specify network to disable.")
+            elif len(args) == 1:
+                self._disable(chat_id, args[0])
+            else:
+                self._sender.send_message(chat_id, f"Invalid number of arguments (expected 1, got {len(args)}).")
+
+        elif command == '/enable':
+            if not args:
+                self._sender.send_message(chat_id, f"Please specify network to enable")
+            elif len(args) == 1:
+                self._enable(chat_id, args[0])
             else:
                 self._sender.send_message(chat_id, f"Invalid number of arguments (expected 1, got {len(args)}).")
 
@@ -343,6 +363,14 @@ class UpdateHandler:
             return
 
         self._balance_service.set_notifications_interval(chat_id, interval)
+
+    def _disable(self, chat_id, network_alias):
+        self._database.set_network_status("disabled", self._network_alias_to_name(network_alias))
+        self._sender.send_message(chat_id, "Success")
+
+    def _enable(self, chat_id, network_alias):
+        self._database.set_network_status("enabled", self._network_alias_to_name(network_alias))
+        self._sender.send_message(chat_id, "Success")
 
     def _start(self, chat_id):
         """

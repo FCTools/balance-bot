@@ -125,6 +125,10 @@ class TrafficSourceClient:
         :return: None
         """
 
+        status = self._database.get_network_status(self.network_fullname)
+        if status == "disabled":
+            return
+
         balance = self.get_balance()
 
         if balance is None:
