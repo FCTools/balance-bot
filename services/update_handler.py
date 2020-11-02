@@ -366,11 +366,11 @@ class UpdateHandler:
 
     def _disable(self, chat_id, network_alias):
         self._database.set_network_status("disabled", self._network_alias_to_name(network_alias))
-        self._sender.send_message(chat_id, "Success")
+        self._sender.send_message(chat_id, "Success.")
 
     def _enable(self, chat_id, network_alias):
         self._database.set_network_status("enabled", self._network_alias_to_name(network_alias))
-        self._sender.send_message(chat_id, "Success")
+        self._sender.send_message(chat_id, "Success.")
 
     def _start(self, chat_id):
         """

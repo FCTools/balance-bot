@@ -165,7 +165,7 @@ class Database(metaclass=Singleton):
     def set_network_status(self, status, network):
         with self._lock:
             with sqlite3.connect(self._database_name) as connection:
-                connection.execute(f"UPDATE networks SET status={status} WHERE name='{network}'")
+                connection.execute(f"UPDATE networks SET status='{status}' WHERE name='{network}'")
 
         return True, "OK"
 
