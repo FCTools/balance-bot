@@ -163,6 +163,16 @@ class Database(metaclass=Singleton):
 
     @catch_database_error
     def set_network_status(self, status, network):
+        """
+        Set status (enabled/disabled) for given network.
+
+        :param network: network alias
+        :type network: str
+
+        :return: status (True if success, else False) and message
+        :rtype: Tuple[Union[bool, str]]
+        """
+
         with self._lock:
             with sqlite3.connect(self._database_name) as connection:
                 connection.execute(f"UPDATE networks SET status='{status}' WHERE name='{network}'")
@@ -171,6 +181,15 @@ class Database(metaclass=Singleton):
 
     @catch_database_error
     def get_network_status(self, network):
+        """
+        Return status (enabled/disabled) for given network.
+
+        :param network: network alias
+        :type network: str
+
+        :return: network status
+        """
+
         with self._lock:
             with sqlite3.connect(self._database_name) as connection:
                 status_query = connection.execute(f"SELECT * from networks WHERE name='{network}'")

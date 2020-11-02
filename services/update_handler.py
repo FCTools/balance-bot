@@ -207,7 +207,10 @@ class UpdateHandler:
             if not args:
                 self._sender.send_message(chat_id, f"Please specify network to disable.")
             elif len(args) == 1:
-                self._disable(chat_id, args[0])
+                if args[0] in self._available_networks:
+                    self._disable(chat_id, args[0])
+                else:
+                    self._sender.send_message(chat_id, f"Invalid network: {args[0]}.")
             else:
                 self._sender.send_message(chat_id, f"Invalid number of arguments (expected 1, got {len(args)}).")
 
@@ -215,7 +218,10 @@ class UpdateHandler:
             if not args:
                 self._sender.send_message(chat_id, f"Please specify network to enable")
             elif len(args) == 1:
-                self._enable(chat_id, args[0])
+                if args[0] in self._available_networks:
+                    self._enable(chat_id, args[0])
+                else:
+                    self._sender.send_message(chat_id, f"Invalid network: {args[0]}.")
             else:
                 self._sender.send_message(chat_id, f"Invalid number of arguments (expected 1, got {len(args)}).")
 
@@ -365,10 +371,34 @@ class UpdateHandler:
         self._balance_service.set_notifications_interval(chat_id, interval)
 
     def _disable(self, chat_id, network_alias):
+        """
+        Disable notifications for selected network.
+
+        :param chat_id: sender chat id
+        :type chat_id: int
+
+        :param network_alias: network alias
+        :type network_alias: str
+
+        :return: None
+        """
+
         self._database.set_network_status("disabled", self._network_alias_to_name(network_alias))
         self._sender.send_message(chat_id, "Success.")
 
     def _enable(self, chat_id, network_alias):
+        """
+        Enable notifications for selected network.
+
+        :param chat_id: sender chat id
+        :type chat_id: int
+
+        :param network_alias: network alias
+        :type network_alias: str
+
+        :return: None
+        """
+
         self._database.set_network_status("enabled", self._network_alias_to_name(network_alias))
         self._sender.send_message(chat_id, "Success.")
 
