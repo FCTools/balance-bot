@@ -133,13 +133,15 @@ class DaoPushClient(TrafficSourceClient):
         try:
             print(str(
                     soup.select(
-                        "#topnav > div.topbar-main > div > div.menu-extras > div.top-nav.pull-right.hidden-xs > ul"
-                    )
+                        "#topnav > div.topbar-main > div > div.menu-extras > "
+                        "div.top-nav.pull-right.hidden-xs > ul > li:nth-child(3)"
+                    )[0]
                 ))
             balance = float(
                 str(
                     soup.select(
-                        "#topnav > div.topbar-main > div > div.menu-extras > div.top-nav.pull-right.hidden-xs > ul"
+                        "#topnav > div.topbar-main > div > div.menu-extras > "
+                        "div.top-nav.pull-right.hidden-xs > ul > li:nth-child(3)"
                     )[0]
                 )
                     .split("Баланс: ")[1]
