@@ -134,7 +134,7 @@ class DaoPushClient(TrafficSourceClient):
             print(str(
                     soup.select(
                         "#topnav > div.topbar-main > div > div.menu-extras > div.top-nav.pull-right.hidden-xs > ul"
-                    )[0]
+                    )
                 ))
             balance = float(
                 str(
