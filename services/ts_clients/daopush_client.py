@@ -131,6 +131,11 @@ class DaoPushClient(TrafficSourceClient):
 
         soup = BeautifulSoup(statistics_page.text, "lxml")
         try:
+            print(str(
+                    soup.select(
+                        "#topnav > div.topbar-main > div > div.menu-extras > div.top-nav.pull-right.hidden-xs > ul"
+                    )[0]
+                ))
             balance = float(
                 str(
                     soup.select(
