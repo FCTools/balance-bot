@@ -134,17 +134,18 @@ class DaoPushClient(TrafficSourceClient):
             balance = float(
                 str(
                     soup.select(
-                        "#topnav > div.topbar-main > div > div.menu-extras > div.top-nav.pull-right.hidden-xs > ul > "
-                        "li:nth-child(2) > a"
+                        "#topnav > div.topbar-main > div > div.menu-extras > div.top-nav.pull-right.hidden-xs > ul"
                     )[0]
                 )
-                    .split(":")[1]
-                    .split("$")[0]
+                    .split("Баланс: ")[1]
+                    .split("<")[0]
                     .strip()
-                    .replace(",", ".")
             )
         except IndexError:
             self._logger.error("Can't get balance from dao.ad statistics page.")
+            return
+        except ValueError:
+            self._logger.error("Can't parse dao.ad balance.")
             return
 
         return balance
