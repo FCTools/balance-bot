@@ -8,7 +8,7 @@ import os
 import sqlite3
 import threading
 
-from services.singleton import Singleton
+from services.helpers.singleton import Singleton
 
 
 def catch_database_error(method):

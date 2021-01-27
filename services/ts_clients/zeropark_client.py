@@ -8,7 +8,7 @@ import os
 
 import requests
 
-from services import requests_manager
+from services.helpers import requests_manager
 from services.ts_clients.ts_client import TrafficSourceClient
 
 

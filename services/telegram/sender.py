@@ -8,7 +8,7 @@ import logging
 
 import requests
 
-from services import requests_manager
+from services.helpers import requests_manager
 
 
 def _button(text):

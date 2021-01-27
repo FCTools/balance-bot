@@ -12,7 +12,7 @@ from queue import Queue
 
 from services.balance_service import BalanceService
 from services.update_handler import UpdateHandler
-from services.updater import Updater
+from services.telegram.updater import Updater
 
 
 class WorkingLoop:

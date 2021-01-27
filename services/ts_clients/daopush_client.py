@@ -10,7 +10,7 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 
-from services import requests_manager
+from services.helpers import requests_manager
 from services.ts_clients.ts_client import TrafficSourceClient
 
 

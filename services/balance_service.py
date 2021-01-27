@@ -6,8 +6,8 @@ import logging
 import os
 import time
 
-from services.sender import Sender
-from services.singleton import Singleton
+from services.telegram.sender import Sender
+from services.helpers.singleton import Singleton
 from services.ts_clients.clients import *
 
 

@@ -9,7 +9,7 @@ from datetime import timedelta, datetime
 from random import choice
 
 from services.database_cursor import Database
-from services.sender import Sender
+from services.telegram.sender import Sender
 
 
 class TrafficSourceClient:

@@ -7,7 +7,7 @@ import logging
 
 from services.balance_service import BalanceService
 from services.database_cursor import Database
-from services.sender import Sender
+from services.telegram.sender import Sender
 
 
 class UpdateHandler:
