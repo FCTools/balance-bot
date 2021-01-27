@@ -27,7 +27,6 @@ class DaoPushClient(TrafficSourceClient):
     def _authorize(self):
         """
         Authorize on DaoPush and update session.
-
         :return: status - True if success, else False
         :rtype: bool
         """
@@ -108,7 +107,6 @@ class DaoPushClient(TrafficSourceClient):
     def get_balance(self):
         """
         Get DaoPush balance.
-
         :return: balance or None
         :rtype: Union[None, float]
         """
@@ -131,28 +129,20 @@ class DaoPushClient(TrafficSourceClient):
 
         soup = BeautifulSoup(statistics_page.text, "lxml")
         try:
-            print(str(
-                    soup.select(
-                        "#topnav > div.topbar-main > div > div.menu-extras > "
-                        "div.top-nav.pull-right.hidden-xs > ul > li:nth-child(3)"
-                    )[0]
-                ))
             balance = float(
                 str(
                     soup.select(
-                        "#topnav > div.topbar-main > div > div.menu-extras > "
-                        "div.top-nav.pull-right.hidden-xs > ul > li:nth-child(3)"
+                        "#topnav > div.topbar-main > div > div.menu-extras > div.top-nav.pull-right.hidden-xs > ul > "
+                        "li:nth-child(3) > a"
                     )[0]
                 )
-                    .split("Баланс: ")[1]
-                    .split("<")[0]
+                    .split(":")[1]
+                    .split("$")[0]
                     .strip()
+                    .replace(",", ".")
             )
         except IndexError:
             self._logger.error("Can't get balance from dao.ad statistics page.")
-            return
-        except ValueError:
-            self._logger.error("Can't parse dao.ad balance.")
             return
 
         return balance
