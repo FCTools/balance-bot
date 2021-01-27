@@ -77,6 +77,9 @@ class DaoPushClient(TrafficSourceClient):
         except IndexError:
             self._logger.error("IndexError occurred while trying to get csrf-token from dao.ad login-page.")
             return False
+        except ValueError:
+            self._logger.error("ValueError occurred while trying to get csrf-token from dao.ad login-page.")
+            return False
 
         time.sleep(5)
 
@@ -118,9 +121,7 @@ class DaoPushClient(TrafficSourceClient):
             if not self._authorize():
                 return
 
-        statistics_page = requests_manager.get(
-            self._session, "https://dao.ad/manage/statistic"
-        )
+        statistics_page = requests_manager.get(self._session, "https://dao.ad/manage/statistic")
 
         if not isinstance(statistics_page, requests.Response):
             self._logger.error(f"Error occurred while trying to get dao.ad statistics page: {statistics_page}")
@@ -140,7 +141,7 @@ class DaoPushClient(TrafficSourceClient):
                     )[0]
                 ).split('$')[1].split('<')[0]
             )
-        except IndexError:
+        except (IndexError, ValueError):
             self._logger.error("Can't get balance from dao.ad statistics page.")
             return
 

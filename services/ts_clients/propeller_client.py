@@ -26,7 +26,7 @@ class PropellerClient(TrafficSourceClient):
 
     def get_balance(self):
         """
-        Get PropellerAds balance.
+        Get Propeller Ads balance.
 
         :return: balance or None
         :rtype: Union[None, float]

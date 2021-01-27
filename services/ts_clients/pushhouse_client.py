@@ -152,12 +152,9 @@ class PushHouseClient(TrafficSourceClient):
                         "body > div.wrapper100.headerblock > div > div > "
                         "div.col.flexible > div > div.amountBlock > span"
                     )[0]
-                )
-                    .split("$")[1]
-                    .split("<")[0]
-                    .strip()
+                ).split("$")[1].split("<")[0].strip()
             )
-        except IndexError:
+        except (IndexError, ValueError):
             self._logger.error("Can't get balance from dashboard-page.")
             return
 
