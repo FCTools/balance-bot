@@ -135,13 +135,8 @@ class DaoPushClient(TrafficSourceClient):
                         "#topnav > div.topbar-main > div > div.menu-extras > div.top-nav.pull-right.hidden-xs > ul > "
                         "li:nth-child(3) > a"
                     )[0]
-                )
-                    .split(":")[1]
-                    .split("$")[0]
-                    .strip()
-                    .replace(",", ".")
+                ).split('$')[1].split('<')[0]
             )
-            print(balance)
         except IndexError:
             self._logger.error("Can't get balance from dao.ad statistics page.")
             return
