@@ -141,6 +141,7 @@ class DaoPushClient(TrafficSourceClient):
                     .strip()
                     .replace(",", ".")
             )
+            print(balance)
         except IndexError:
             self._logger.error("Can't get balance from dao.ad statistics page.")
             return
