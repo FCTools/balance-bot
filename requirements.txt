@@ -1,5 +1,11 @@
-requests~=2.24.0
-anticaptchaofficial~=1.0.26
-beautifulsoup4~=4.9.1
-lxml~=4.5.2
-cfscrape~=2.1.1
+anticaptchaofficial==1.0.29
+beautifulsoup4==4.9.3
+certifi==2020.12.5
+cfscrape==2.1.1
+chardet==4.0.0
+idna==2.10
+lxml==4.6.2
+py==1.10.0
+requests==2.25.1
+soupsieve==2.1
+urllib3==1.26.3
