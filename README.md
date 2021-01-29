@@ -40,6 +40,9 @@ Project name for copyright: balance-bot
     Sets notifications interval. Notification interval must be more than 20.4 minutes (0.34 hours) and less than 6 hours.
     
     Example: `/set_notifications_interval 2.5`
+8. `/disable [network alias]`
+   
+    Disables notifications for given network.
 
 ### Available networks
 1. Propeller Ads (alias - `prop`) - via [api](https://ssp-api.propellerads.com/v5/docs/#/)
