@@ -44,6 +44,10 @@ Project name for copyright: balance-bot
    
     Disables notifications for given network.
 
+9. `/enable [network alias]`
+
+    Enables notifications for given network.
+
 ### Available networks
 1. Propeller Ads (alias - `prop`) - via [api](https://ssp-api.propellerads.com/v5/docs/#/)
 2. Push.house (alias - `pushhouse`) - via web-interface
