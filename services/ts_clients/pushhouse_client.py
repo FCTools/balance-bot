@@ -146,6 +146,13 @@ class PushHouseClient(TrafficSourceClient):
         soup_page = BeautifulSoup(dashboard_response.text, "lxml")
 
         try:
+            tmp = str(
+                    soup_page.select(
+                        "body > div.wrapper100.headerblock > div > div > "
+                        "div.col.flexible > div > div.amountBlock > span"
+                    )[0]
+                )
+            print(tmp)
             balance = float(
                 str(
                     soup_page.select(
